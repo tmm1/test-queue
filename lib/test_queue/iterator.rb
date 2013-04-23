@@ -17,9 +17,12 @@ module TestQueue
         break if !e.empty?
 
         if data = client.read(16384)
-          item = Marshal.load(data)
           client.close
+          item = Marshal.load(data)
+
+          start = Time.now
           yield item
+          @stats[item] = Time.now - start
         else
           break
         end
@@ -27,6 +30,9 @@ module TestQueue
     rescue Errno::ENOENT, Errno::ECONNRESET, Errno::ECONNREFUSED
     ensure
       @done = true
+      File.open("/tmp/test_queue_worker_#{$$}_stats", "wb") do |f|
+        f.write Marshal.dump(@stats)
+      end
     end
 
     include Enumerable

@@ -111,7 +111,7 @@ module TestQueue
         end
 
         if File.exists?(file = "/tmp/test_queue_worker_#{pid}_stats")
-          workers.stats = Marshal.load(IO.binread(file))
+          worker.stats = Marshal.load(IO.binread(file))
           FileUtils.rm(file)
         end
       end
