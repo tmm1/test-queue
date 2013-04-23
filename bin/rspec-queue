@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+require 'test_queue'
+require 'test_queue/runner/rspec'
+TestQueue::Runner::RSpec.new.execute
