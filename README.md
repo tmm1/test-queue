@@ -37,6 +37,8 @@ runner to reset any global state:
 ``` ruby
 class CustomMiniTestRunner < TestQueue::Runner::MiniTest
   def after_fork(num)
+    super
+
     # use separate mysql database (we assume it exists and has the right schema already)
     ActiveRecord::Base.configurations['test']['database'] << num.to_s
     ActiveRecord::Base.establish_connection(:test)
