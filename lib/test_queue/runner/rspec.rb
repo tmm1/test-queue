@@ -21,7 +21,15 @@ module RSpec::Core
       @configuration.reporter.report(0, @configuration.randomize? ? @configuration.seed : nil) do |reporter|
         begin
           @configuration.run_hook(:before, :suite)
-          iterator.map {|g| g.run(reporter)}.all? ? 0 : @configuration.failure_exit_code
+          iterator.map {|g|
+            print "    #{g.description}: "
+            start = Time.now
+            ret = g.run(reporter)
+            diff = Time.now-start
+            puts("  <%.3f>" % diff)
+
+            ret
+          }.all? ? 0 : @configuration.failure_exit_code
         ensure
           @configuration.run_hook(:after, :suite)
         end
