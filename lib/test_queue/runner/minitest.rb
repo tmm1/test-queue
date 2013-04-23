@@ -35,7 +35,7 @@ class MiniTest::Unit::TestCase
     attr_accessor :test_suites
 
     def original_test_suites
-      @@test_suites
+      @@test_suites.keys.reject{ |s| s.test_methods.empty? }
     end
   end
 end
@@ -44,14 +44,12 @@ module TestQueue
   class Runner
     class MiniTest < Runner
       def initialize
-        ARGV.each{ |f| require(f) }
-
-        super(::MiniTest::Unit::TestCase.original_test_suites.keys.reject{ |s| s.test_methods.empty? })
+        super(::MiniTest::Unit::TestCase.original_test_suites)
       end
 
       def run_worker(iterator)
         ::MiniTest::Unit::TestCase.test_suites = iterator
-        ::MiniTest::Unit.new.run(ARGV) || 0
+        ::MiniTest::Unit.new.run
       end
     end
   end

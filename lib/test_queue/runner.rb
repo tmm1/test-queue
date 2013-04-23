@@ -93,10 +93,11 @@ module TestQueue
     end
 
     def run_worker(iterator)
-      iterator.each do
+      iterator.each do |item|
+        puts "  #{item.inspect}"
       end
 
-      0
+      return 0 # exit status
     end
 
     def cleanup_worker

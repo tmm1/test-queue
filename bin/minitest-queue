@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
 require 'test_queue'
 require 'test_queue/runner/minitest'
+ARGV.each{ |f| require(f) }
 TestQueue::Runner::MiniTest.new.execute

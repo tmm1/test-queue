@@ -43,13 +43,11 @@ module TestQueue
     class RSpec < Runner
       def initialize
         @rspec = ::RSpec::Core::QueueRunner.new
-        suites = Array(@rspec.example_groups).dup
-
-        super(suites)
+        super(@rspec.example_groups)
       end
 
       def run_worker(iterator)
-        @rspec.run_each(iterator) || 0
+        @rspec.run_each(iterator)
       end
     end
   end
