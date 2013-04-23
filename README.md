@@ -51,3 +51,8 @@ end
 
 CustomMiniTestRunner.new.execute
 ```
+
+### see also
+
+  * https://github.com/Shopify/rails_parallel
+  * https://github.com/grosser/parallel_tests
