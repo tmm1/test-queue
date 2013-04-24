@@ -21,6 +21,6 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  minitest
-  rspec
+  minitest (~> 4.7.3)
+  rspec (~> 2.13)
   test-queue!
