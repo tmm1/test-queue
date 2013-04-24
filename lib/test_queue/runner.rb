@@ -1,5 +1,5 @@
-require 'fileutils'
 require 'socket'
+require 'fileutils'
 
 module TestQueue
   class Worker
@@ -10,6 +10,7 @@ module TestQueue
       @pid = pid
       @num = num
       @start_time = Time.now
+      @output = ''
     end
 
     def lines
@@ -67,9 +68,9 @@ module TestQueue
         puts "==> Failures"
         puts
         puts @failures
-        puts
       end
 
+      puts
       exit! @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
     end
 
