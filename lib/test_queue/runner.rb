@@ -43,8 +43,8 @@ module TestQueue
 
     def stats
       @stats ||=
-        if File.exists?('.test_queue_stats')
-          Marshal.load(IO.binread('.test_queue_stats'))
+        if File.exists?(file = '.test_queue_stats')
+          Marshal.load(IO.binread(file)) || {}
         else
           {}
         end
@@ -84,8 +84,10 @@ module TestQueue
 
       puts
 
-      File.open('.test_queue_stats', 'wb') do |f|
-        f.write Marshal.dump(@stats)
+      if @stats
+        File.open('.test_queue_stats', 'wb') do |f|
+          f.write Marshal.dump(stats)
+        end
       end
 
       exit! @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
