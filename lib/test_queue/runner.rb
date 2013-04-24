@@ -25,6 +25,7 @@ module TestQueue
       raise ArgumentError, 'array required' unless Array === queue
 
       @queue = queue
+
       @workers = {}
       @completed = []
 
@@ -37,6 +38,15 @@ module TestQueue
           `/usr/sbin/sysctl -n hw.activecpu`.to_i
         else
           2
+        end
+    end
+
+    def stats
+      @stats ||=
+        if File.exists?('.test_queue_stats')
+          Marshal.load(IO.binread('.test_queue_stats'))
+        else
+          {}
         end
     end
 
@@ -71,6 +81,11 @@ module TestQueue
       end
 
       puts
+
+      File.open('.test_queue_stats', 'wb') do |f|
+        f.write Marshal.dump(@stats)
+      end
+
       exit! @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
     end
 

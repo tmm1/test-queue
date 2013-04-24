@@ -24,8 +24,11 @@ module TestQueue
       end
 
       def summarize_worker(worker)
+        stats.update(worker.stats)
+
         summary  = worker.output.scan(/^\s*(\d+)/).join(', ')
         failures = ''
+
         [ summary, failures ]
       end
     end

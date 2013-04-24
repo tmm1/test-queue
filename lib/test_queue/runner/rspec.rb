@@ -43,7 +43,7 @@ module TestQueue
     class RSpec < Runner
       def initialize
         @rspec = ::RSpec::Core::QueueRunner.new
-        super(@rspec.example_groups)
+        super(@rspec.example_groups.sort_by{ |s| -(stats[s.description] || 0) })
       end
 
       def run_worker(iterator)
@@ -51,6 +51,10 @@ module TestQueue
       end
 
       def summarize_worker(worker)
+        worker.stats.each do |s, val|
+          stats[s.description] = val
+        end
+
         num_tests = worker.lines.grep(/ examples?, /).first
         failures  = worker.output[/^Failures:\n\n(.*)\n^Finished/m, 1]
 

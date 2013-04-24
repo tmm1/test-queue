@@ -44,7 +44,7 @@ module TestQueue
   class Runner
     class MiniTest < Runner
       def initialize
-        super(::MiniTest::Unit::TestCase.original_test_suites)
+        super(::MiniTest::Unit::TestCase.original_test_suites.sort_by{ |s| -(stats[s.to_s] || 0) })
       end
 
       def run_worker(iterator)
@@ -53,6 +53,10 @@ module TestQueue
       end
 
       def summarize_worker(worker)
+        worker.stats.each do |s, val|
+          stats[s.to_s] = val
+        end
+
         num_tests = worker.lines.grep(/ errors?, /).first
         failures  = worker.lines.select{ |line|
           line if (line =~ /^Finished/) ... (line =~ / errors?, /)
