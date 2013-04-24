@@ -66,7 +66,7 @@ module TestQueue
         summary, failures = summarize_worker(worker)
         @failures << failures if failures
 
-        puts "    [%d] %55s      in %.4fs      (pid %d exit %d)" % [
+        puts "    [%2d] %55s      in %.4fs      (pid %d exit %d)" % [
           worker.num,
           summary,
           worker.end_time - worker.start_time,
