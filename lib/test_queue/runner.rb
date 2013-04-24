@@ -3,10 +3,13 @@ require 'socket'
 
 module TestQueue
   class Worker
-    attr_accessor :pid, :status, :output, :stats
+    attr_accessor :pid, :status, :output, :stats, :num
+    attr_accessor :start_time, :end_time
 
-    def initialize(pid)
+    def initialize(pid, num)
       @pid = pid
+      @num = num
+      @start_time = Time.now
     end
   end
 
@@ -17,30 +20,56 @@ module TestQueue
       raise ArgumentError, 'array required' unless Array === queue
 
       @queue = queue
-      @concurrency = concurrency ||
+      @workers = {}
+      @completed = []
+
+      @concurrency =
+        concurrency ||
+        (ENV['TEST_QUEUE_WORKERS'] && ENV['TEST_QUEUE_WORKERS'].to_i) ||
         if File.exists?('/proc/cpuinfo')
           File.read('/proc/cpuinfo').split("\n").grep(/processor/).size
+        elsif RUBY_PLATFORM =~ /darwin/
+          `/usr/sbin/sysctl -n hw.activecpu`.to_i
         else
           2
         end
-      @workers = {}
-      @completed = []
     end
 
     def execute
-      @concurrency > 0 &&
-        execute_parallel ||
+      @concurrency > 0 ?
+        execute_parallel :
         execute_sequential
+    ensure
+      puts
+      puts "==> Summary"
+      puts
+
+      @failures = ''
+      @completed.each do |worker|
+        summary, failures = summarize_worker(worker)
+        puts summary
+        @failures << failures
+      end
+
+      unless @failures.empty?
+        puts
+        puts "==> Failures"
+        puts
+        puts @failures
+      end
+
+      puts
+      exit! @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
     end
 
     def execute_sequential
+      exit! run_worker(@queue)
     end
 
     def execute_parallel
       start_master
       spawn_workers
       distribute_queue
-      exit! @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
     ensure
       stop_master
 
@@ -70,10 +99,10 @@ module TestQueue
         pid = fork do
           @server.close
           after_fork(i)
-          exit! run_worker(iterator = Iterator.new(@socket))
+          exit! run_worker(iterator = Iterator.new(@socket)) || 0
         end
 
-        @workers[pid] = Worker.new(pid)
+        @workers[pid] = Worker.new(pid, i)
       end
     end
 
@@ -100,10 +129,23 @@ module TestQueue
       return 0 # exit status
     end
 
+    def summarize_worker(worker)
+      summary = "    [%d] pid %d finished in %.2fs with exit status %d" % [
+        worker.num,
+        worker.pid,
+        worker.end_time - worker.start_time,
+        worker.status.exitstatus
+      ]
+      failures = ''
+
+      [ summary, failures ]
+    end
+
     def cleanup_worker
       if pid = Process.waitpid and worker = @workers.delete(pid)
         @completed << worker
         worker.status = $?
+        worker.end_time = Time.now
 
         if File.exists?(file = "/tmp/test_queue_worker_#{pid}_output")
           worker.output = IO.binread(file)
