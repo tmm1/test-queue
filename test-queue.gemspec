@@ -13,8 +13,8 @@ spec = Gem::Specification.new do |s|
   s.executables << 'rspec-queue'
   s.executables << 'minitest-queue'
 
-  s.add_development_dependency 'rspec'
-  s.add_development_dependency 'minitest'
+  s.add_development_dependency 'rspec', '~> 2.13'
+  s.add_development_dependency 'minitest', '~> 4.7.3'
 
   s.files = `git ls-files`.split("\n")
 end
