@@ -1,6 +1,6 @@
 spec = Gem::Specification.new do |s|
   s.name = 'test-queue'
-  s.version = '0.1.0'
+  s.version = '0.1.1'
   s.summary = 'parallel test runner'
 
   s.homepage = "http://github.com/tmm1/test-queue"
