@@ -6,6 +6,7 @@ module TestQueue
       @sock = sock
       @done = false
       @stats = {}
+      @procline = $0
     end
 
     def each
@@ -19,6 +20,7 @@ module TestQueue
         if data = client.read(16384)
           client.close
           item = Marshal.load(data)
+          $0 = "#{@procline} - #{item.respond_to?(:description) ? item.description : item}"
 
           start = Time.now
           yield item

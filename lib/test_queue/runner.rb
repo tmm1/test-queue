@@ -142,7 +142,7 @@ module TestQueue
       $stdout.reopen(output)
       $stderr.reopen($stdout)
 
-      $0 = "ruby test-queue worker [#{num}]"
+      $0 = "test-queue worker [#{num}]"
       puts
       puts "==> Starting #$0 (#{Process.pid})"
       puts
