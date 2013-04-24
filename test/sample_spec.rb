@@ -16,6 +16,6 @@ end
 
 describe 'RSpecFailure' do
   it 'fails' do
-    assert_equal 0, 1
+    :foo.should eq(:bar)
   end
 end
