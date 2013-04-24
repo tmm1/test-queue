@@ -49,6 +49,13 @@ module TestQueue
       def run_worker(iterator)
         @rspec.run_each(iterator)
       end
+
+      def summarize_worker(worker)
+        num_tests = worker.lines.grep(/ examples?, /).first
+        failures  = worker.output[/^Failures:\n\n(.*)\n^Finished/m, 1]
+
+        [ num_tests, failures ]
+      end
     end
   end
 end

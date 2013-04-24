@@ -11,6 +11,10 @@ module TestQueue
       @num = num
       @start_time = Time.now
     end
+
+    def lines
+      @output.split("\n")
+    end
   end
 
   class Runner
@@ -47,8 +51,15 @@ module TestQueue
       @failures = ''
       @completed.each do |worker|
         summary, failures = summarize_worker(worker)
-        puts summary
-        @failures << failures
+        @failures << failures if failures
+
+        puts "    [%d] %55s      in %.4fs      (pid %d exit %d)" % [
+          worker.num,
+          summary,
+          worker.end_time - worker.start_time,
+          worker.pid,
+          worker.status.exitstatus
+        ]
       end
 
       unless @failures.empty?
@@ -56,9 +67,9 @@ module TestQueue
         puts "==> Failures"
         puts
         puts @failures
+        puts
       end
 
-      puts
       exit! @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
     end
 
@@ -130,15 +141,10 @@ module TestQueue
     end
 
     def summarize_worker(worker)
-      summary = "    [%d] pid %d finished in %.2fs with exit status %d" % [
-        worker.num,
-        worker.pid,
-        worker.end_time - worker.start_time,
-        worker.status.exitstatus
-      ]
+      num_tests = ''
       failures = ''
 
-      [ summary, failures ]
+      [ num_tests, failures ]
     end
 
     def cleanup_worker
