@@ -3,7 +3,7 @@
 Yet another parallel test runner, built using a centralized queue to ensure
 optimal distribution of tests between workers.
 
-Specifially optimized for CI environments: build statistics from each run
+Specifically optimized for CI environments: build statistics from each run
 are stored locally and used to sort the queue at the beginning of the
 next run.
 
