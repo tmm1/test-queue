@@ -51,6 +51,8 @@ module TestQueue
     end
 
     def execute
+      $stdout.sync = $stderr.sync = true
+
       @concurrency > 0 ?
         execute_parallel :
         execute_sequential
@@ -137,10 +139,10 @@ module TestQueue
       srand
 
       output = File.open("/tmp/test_queue_worker_#{$$}_output", 'w')
-      output.sync = true
 
       $stdout.reopen(output)
       $stderr.reopen($stdout)
+      $stdout.sync = $stderr.sync = true
 
       $0 = "test-queue worker [#{num}]"
       puts
