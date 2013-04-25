@@ -1,5 +1,6 @@
 require 'test_queue/runner'
 require 'minitest/unit'
+require 'stringio'
 
 class MiniTestQueueRunner < MiniTest::Unit
   def _run_suites(*)
