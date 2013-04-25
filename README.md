@@ -11,7 +11,7 @@ next run.
 
 ```
 $ minitest-queue $(find test/ -name \*_test.rb)
-$ rspec-queue    $(find spec/ -name \*_spec.rb)
+$ rspec-queue --format progress spec
 ```
 
 ### design
