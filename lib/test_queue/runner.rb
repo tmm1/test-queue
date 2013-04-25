@@ -127,13 +127,15 @@ module TestQueue
 
     def spawn_workers
       @concurrency.times do |i|
+        num = i+1
+
         pid = fork do
           @server.close
-          after_fork(i)
+          after_fork(num)
           exit! run_worker(iterator = Iterator.new(@socket)) || 0
         end
 
-        @workers[pid] = Worker.new(pid, i)
+        @workers[pid] = Worker.new(pid, num)
       end
     end
 
