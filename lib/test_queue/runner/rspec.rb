@@ -5,6 +5,8 @@ module RSpec::Core
   class QueueRunner < CommandLine
     def initialize
       super(ARGV)
+      @configuration.output_stream = $stdout
+      @configuration.error_stream  = $stderr
     end
 
     def example_groups
@@ -15,9 +17,6 @@ module RSpec::Core
     end
 
     def run_each(iterator)
-      @configuration.error_stream = $stderr
-      @configuration.output_stream = $stdout
-
       @configuration.reporter.report(0, @configuration.randomize? ? @configuration.seed : nil) do |reporter|
         begin
           @configuration.run_hook(:before, :suite)
