@@ -24,6 +24,7 @@ module TestQueue
     def initialize(queue, concurrency=nil)
       raise ArgumentError, 'array required' unless Array === queue
 
+      @procline = $0
       @queue = queue
 
       @workers = {}
@@ -117,6 +118,8 @@ module TestQueue
       @socket = "/tmp/test_queue_#{$$}_#{object_id}.sock"
       FileUtils.rm(@socket) if File.exists?(@socket)
       @server = UNIXServer.new(@socket)
+
+      $0 = "test-queue master (#{@socket}) - #{@procline}"
     end
 
     def stop_master
