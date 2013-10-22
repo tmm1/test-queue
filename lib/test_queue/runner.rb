@@ -21,7 +21,7 @@ module TestQueue
   class Runner
     attr_accessor :concurrency
 
-    def initialize(queue, concurrency=nil)
+    def initialize(queue, concurrency=nil, socket=nil)
       raise ArgumentError, 'array required' unless Array === queue
 
       @procline = $0
@@ -40,6 +40,11 @@ module TestQueue
         else
           2
         end
+
+      @socket =
+        socket ||
+        ENV['TEST_QUEUE_SOCKET'] ||
+        "/tmp/test_queue_#{$$}_#{object_id}.sock"
     end
 
     def stats
@@ -115,15 +120,20 @@ module TestQueue
     end
 
     def start_master
-      @socket = "/tmp/test_queue_#{$$}_#{object_id}.sock"
-      FileUtils.rm(@socket) if File.exists?(@socket)
-      @server = UNIXServer.new(@socket)
+      if @socket =~ /^(.+):(\d+)$/
+        address = $1
+        port = $2.to_i
+        @server = TCPServer.new(address, port)
+      else
+        FileUtils.rm(@socket) if File.exists?(@socket)
+        @server = UNIXServer.new(@socket)
+      end
 
       $0 = "test-queue master (#{@socket}) - #{@procline}"
     end
 
     def stop_master
-      FileUtils.rm_f(@socket) if @socket
+      FileUtils.rm_f(@socket) if @socket && @server.is_a?(UNIXServer)
       @server.close rescue nil if @server
       @socket = @server = nil
     end
