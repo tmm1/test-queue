@@ -11,6 +11,7 @@ module TestQueue
       @num = num
       @start_time = Time.now
       @output = ''
+      @stats = {}
     end
 
     def lines
@@ -188,8 +189,8 @@ module TestQueue
       [ num_tests, failures ]
     end
 
-    def cleanup_worker
-      if pid = Process.waitpid and worker = @workers.delete(pid)
+    def cleanup_worker(blocking=true)
+      if pid = Process.waitpid(-1, blocking ? 0 : Process::WNOHANG) and worker = @workers.delete(pid)
         @completed << worker
         worker.status = $?
         worker.end_time = Time.now
@@ -209,11 +210,13 @@ module TestQueue
 
     def distribute_queue
       until @queue.empty?
-        IO.select([@server], nil, nil, nil)
-
-        sock = @server.accept
-        sock.write(Marshal.dump(@queue.shift))
-        sock.close
+        if IO.select([@server], nil, nil, 0.01).nil?
+          cleanup_worker(false)
+        else
+          sock = @server.accept
+          sock.write(Marshal.dump(@queue.shift))
+          sock.close
+        end
       end
     ensure
       stop_master
