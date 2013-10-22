@@ -50,6 +50,8 @@ end
 CustomMiniTestRunner.new.execute
 ```
 
+The file above can be saved to `script/test-queue` in your project and made executable.
+
 ### see also
 
   * https://github.com/Shopify/rails_parallel
