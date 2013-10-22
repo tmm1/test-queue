@@ -131,6 +131,7 @@ module TestQueue
 
         pid = fork do
           @server.close
+          after_fork_internal(num)
           after_fork(num)
           exit! run_worker(iterator = Iterator.new(@socket)) || 0
         end
@@ -139,7 +140,7 @@ module TestQueue
       end
     end
 
-    def after_fork(num)
+    def after_fork_internal(num)
       srand
 
       output = File.open("/tmp/test_queue_worker_#{$$}_output", 'w')
@@ -152,6 +153,11 @@ module TestQueue
       puts
       puts "==> Starting #$0 (#{Process.pid})"
       puts
+
+      after_fork(num)
+    end
+
+    def after_fork(num)
     end
 
     def run_worker(iterator)
