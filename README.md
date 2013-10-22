@@ -7,12 +7,6 @@ Specifically optimized for CI environments: build statistics from each run
 are stored locally and used to sort the queue at the beginning of the
 next run.
 
-### usage
-
-```
-$ minitest-queue $(find test/ -name \*_test.rb)
-$ rspec-queue --format progress spec
-```
 
 ### design
 
@@ -28,14 +22,31 @@ the queue.
  └─── 21562 minitest-queue worker [0] - UserTest
 ```
 
-### customization
+### usage
+
+test-queue bundles `minitest-queue` and `rspec-queue` binaries which can be used directly:
+
+```
+$ minitest-queue $(find test/ -name \*_test.rb)
+$ rspec-queue --format progress spec
+```
+
+But the underlying `TestQueue::Runner::MiniTest` and `TestQueue::Runner::Rspec` are
+built to be subclassed by your application. I recommend checking a new
+executable into your project using one of these superclasses.
+
+```
+$ vim script/test-queue
+$ chmod +x script/test-queue
+$ git add script/test-queue
+```
 
 Since test-queue uses `fork(2)` to spawn off workers, you must ensure each worker
 runs in an isolated environment. Use the `after_fork` hook with a custom
-runner to reset any global state:
+runner to reset any global state.
 
 ``` ruby
-class CustomMiniTestRunner < TestQueue::Runner::MiniTest
+class MyAppTestRunner < TestQueue::Runner::MiniTest
   def after_fork(num)
     # use separate mysql database (we assume it exists and has the right schema already)
     ActiveRecord::Base.configurations['test']['database'] << num.to_s
@@ -49,8 +60,6 @@ end
 
 CustomMiniTestRunner.new.execute
 ```
-
-The file above can be saved to `script/test-queue` in your project and made executable.
 
 ### see also
 
