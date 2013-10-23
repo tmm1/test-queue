@@ -70,17 +70,18 @@ module TestQueue
 
     def execute
       $stdout.sync = $stderr.sync = true
+      @start_time = Time.now
 
       @concurrency > 0 ?
         execute_parallel :
         execute_sequential
     ensure
-      summarize
+      summarize_internal
     end
 
-    def summarize
+    def summarize_internal
       puts
-      puts "==> Summary"
+      puts "==> Summary (#{@completed.size} workers in %.4fs)" % (Time.now-@start_time)
       puts
 
       @failures = ''
@@ -113,7 +114,11 @@ module TestQueue
         end
       end
 
+      summarize
       exit! @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
+    end
+
+    def summarize
     end
 
     def execute_sequential
