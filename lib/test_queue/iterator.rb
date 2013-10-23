@@ -1,6 +1,6 @@
 module TestQueue
   class Iterator
-    attr_reader :stats
+    attr_reader :stats, :sock
 
     def initialize(sock)
       @done = false
@@ -17,15 +17,16 @@ module TestQueue
       fail 'already used this iterator' if @done
 
       while true
-        client = connect_to_master
+        client = connect_to_master('POP')
         r, w, e = IO.select([client], nil, [client], nil)
         break if !e.empty?
 
-        if data = client.read(16384)
+        if data = client.read(65536)
           client.close
           item = Marshal.load(data)
-          $0 = "#{@procline} - #{item.respond_to?(:description) ? item.description : item}"
+          break if item.nil?
 
+          $0 = "#{@procline} - #{item.respond_to?(:description) ? item.description : item}"
           start = Time.now
           yield item
           @stats[item] = Time.now - start
@@ -41,12 +42,15 @@ module TestQueue
       end
     end
 
-    def connect_to_master
-      if @tcp_address
-        TCPSocket.new(@tcp_address, @tcp_port)
-      else
-        UNIXSocket.new(@sock)
-      end
+    def connect_to_master(cmd)
+      sock =
+        if @tcp_address
+          TCPSocket.new(@tcp_address, @tcp_port)
+        else
+          UNIXSocket.new(@sock)
+        end
+      sock.puts(cmd)
+      sock
     end
 
     include Enumerable

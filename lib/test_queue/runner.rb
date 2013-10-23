@@ -3,7 +3,7 @@ require 'fileutils'
 
 module TestQueue
   class Worker
-    attr_accessor :pid, :status, :output, :stats, :num
+    attr_accessor :pid, :status, :output, :stats, :num, :host
     attr_accessor :start_time, :end_time
 
     def initialize(pid, num)
@@ -22,7 +22,7 @@ module TestQueue
   class Runner
     attr_accessor :concurrency
 
-    def initialize(queue, concurrency=nil, socket=nil)
+    def initialize(queue, concurrency=nil, socket=nil, relay=nil)
       raise ArgumentError, 'array required' unless Array === queue
 
       @procline = $0
@@ -46,6 +46,17 @@ module TestQueue
         socket ||
         ENV['TEST_QUEUE_SOCKET'] ||
         "/tmp/test_queue_#{$$}_#{object_id}.sock"
+
+      @relay =
+        relay ||
+        ENV['TEST_QUEUE_RELAY']
+
+      if @relay == @socket
+        STDERR.puts "*** Detected TEST_QUEUE_RELAY == TEST_QUEUE_SOCKET. Disabling relay mode."
+        @relay = nil
+      elsif @relay
+        @queue = []
+      end
     end
 
     def stats
@@ -64,6 +75,10 @@ module TestQueue
         execute_parallel :
         execute_sequential
     ensure
+      summarize
+    end
+
+    def summarize
       puts
       puts "==> Summary"
       puts
@@ -73,12 +88,13 @@ module TestQueue
         summary, failures = summarize_worker(worker)
         @failures << failures if failures
 
-        puts "    [%2d] %60s      in %.4fs      (pid %d exit %d)" % [
+        puts "    [%2d] %60s      in %.4fs      (pid %d exit %d%s)" % [
           worker.num,
           summary,
           worker.end_time - worker.start_time,
           worker.pid,
-          worker.status.exitstatus
+          worker.status.exitstatus,
+          worker.host && " on #{worker.host}"
         ]
       end
 
@@ -121,19 +137,35 @@ module TestQueue
     end
 
     def start_master
-      if @socket =~ /^(.+):(\d+)$/
-        address = $1
-        port = $2.to_i
-        @server = TCPServer.new(address, port)
+      if relay?
+        begin
+          sock = connect_to_relay
+          sock.puts("SLAVE #{@concurrency}")
+          sock.close
+        rescue Errno::ECONNREFUSED
+          STDERR.puts "*** Unable to connect to relay #{@relay}. Aborting.."
+          exit! 1
+        end
       else
-        FileUtils.rm(@socket) if File.exists?(@socket)
-        @server = UNIXServer.new(@socket)
+        if @socket =~ /^(?:(.+):)?(\d+)$/
+          address = $1 || '0.0.0.0'
+          port = $2.to_i
+          @socket = "#$1:#$2"
+          @server = TCPServer.new(address, port)
+        else
+          FileUtils.rm(@socket) if File.exists?(@socket)
+          @server = UNIXServer.new(@socket)
+        end
       end
 
-      $0 = "test-queue master (#{@socket}) - #{@procline}"
+      desc = "test-queue master (#{relay?? "relaying to #{@relay}" : @socket})"
+      puts "Starting #{desc}"
+      $0 = "#{desc} - #{@procline}"
     end
 
     def stop_master
+      return if relay?
+
       FileUtils.rm_f(@socket) if @socket && @server.is_a?(UNIXServer)
       @server.close rescue nil if @server
       @socket = @server = nil
@@ -144,17 +176,18 @@ module TestQueue
         num = i+1
 
         pid = fork do
-          @server.close
-          after_fork_internal(num)
-          after_fork(num)
-          exit! run_worker(iterator = Iterator.new(@socket)) || 0
+          @server.close if @server
+
+          iterator = Iterator.new(relay?? @relay : @socket)
+          after_fork_internal(num, iterator)
+          exit! run_worker(iterator) || 0
         end
 
         @workers[pid] = Worker.new(pid, num)
       end
     end
 
-    def after_fork_internal(num)
+    def after_fork_internal(num, iterator)
       srand
 
       output = File.open("/tmp/test_queue_worker_#{$$}_output", 'w')
@@ -165,7 +198,7 @@ module TestQueue
 
       $0 = "test-queue worker [#{num}]"
       puts
-      puts "==> Starting #$0 (#{Process.pid})"
+      puts "==> Starting #$0 (#{Process.pid}) - iterating over #{iterator.sock}"
       puts
 
       after_fork(num)
@@ -191,13 +224,11 @@ module TestQueue
 
     def cleanup_worker(blocking=true)
       if pid = Process.waitpid(-1, blocking ? 0 : Process::WNOHANG) and worker = @workers.delete(pid)
-        @completed << worker
         worker.status = $?
         worker.end_time = Time.now
 
         if File.exists?(file = "/tmp/test_queue_worker_#{pid}_output")
           worker.output = IO.binread(file)
-          puts worker.output
           FileUtils.rm(file)
         end
 
@@ -205,16 +236,39 @@ module TestQueue
           worker.stats = Marshal.load(IO.binread(file))
           FileUtils.rm(file)
         end
+
+        relay_to_master(worker) if relay?
+        worker_completed(worker)
       end
     end
 
+    def worker_completed(worker)
+      @completed << worker
+      puts worker.output if ENV['TEST_QUEUE_VERBOSE']
+    end
+
     def distribute_queue
-      until @queue.empty?
-        if IO.select([@server], nil, nil, 0.01).nil?
-          cleanup_worker(false)
+      return if relay?
+      remote_workers = 0
+
+      until @queue.empty? && remote_workers == 0
+        if IO.select([@server], nil, nil, 0.1).nil?
+          cleanup_worker(false) # check for worker deaths
         else
           sock = @server.accept
-          sock.write(Marshal.dump(@queue.shift))
+          cmd = sock.gets.strip
+          case cmd
+          when 'POP'
+            data = Marshal.dump(@queue.shift)
+            sock.write(data)
+          when /^SLAVE (\d+)/
+            remote_workers += $1.to_i
+          when /^WORKER (\d+)/
+            data = sock.read($1.to_i)
+            worker = Marshal.load(data)
+            worker_completed(worker)
+            remote_workers -= 1
+          end
           sock.close
         end
       end
@@ -224,6 +278,25 @@ module TestQueue
       until @workers.empty?
         cleanup_worker
       end
+    end
+
+    def relay?
+      !!@relay
+    end
+
+    def connect_to_relay
+      TCPSocket.new(*@relay.split(':'))
+    end
+
+    def relay_to_master(worker)
+      worker.host = Socket.gethostname
+      data = Marshal.dump(worker)
+
+      sock = connect_to_relay
+      sock.puts("WORKER #{data.bytesize}")
+      sock.write(data)
+    ensure
+      sock.close if sock
     end
   end
 end

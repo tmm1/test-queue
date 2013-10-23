@@ -7,7 +7,6 @@ Specifically optimized for CI environments: build statistics from each run
 are stored locally and used to sort the queue at the beginning of the
 next run.
 
-
 ### design
 
 test-queue uses a simple master + pre-fork worker model. The master
@@ -21,6 +20,16 @@ the queue.
  ├─── 21565 minitest-queue worker [1] - UsersControllerTest
  └─── 21562 minitest-queue worker [0] - UserTest
 ```
+
+test-queue also has a distributed mode, where additional masters can share
+the workload and relay results back to a central master.
+
+### environment variables
+
+- `TEST_QUEUE_WORKERS`: number of workers to use per master (default: all available cores)
+- `TEST_QUEUE_VERBOSE`: show results as they are available (default: 0)
+- `TEST_QUEUE_SOCKET`: unix socket path (or tcp address:port pair) used for communication (default: /tmp/test_queue_XXXXX.sock)
+- `TEST_QUEUE_RELAY`: relay results back to a central master, specified as tcp address:port
 
 ### usage
 
@@ -46,6 +55,8 @@ runs in an isolated environment. Use the `after_fork` hook with a custom
 runner to reset any global state.
 
 ``` ruby
+#!/usr/bin/env ruby
+
 class MyAppTestRunner < TestQueue::Runner::MiniTest
   def after_fork(num)
     # use separate mysql database (we assume it exists and has the right schema already)
@@ -60,6 +71,19 @@ end
 
 CustomMiniTestRunner.new.execute
 ```
+
+### distributed mode
+
+To use distributed mode, the central master must listen on a tcp port. Additional masters can be booted
+in relay mode to connect to the central master.
+
+```
+$ TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec minitest-queue ./test/sample_test.rb
+$ TEST_QUEUE_RELAY=0.0.0.0:12345  bundle exec minitest-queue ./test/sample_test.rb
+```
+
+See the [Parameterized Trigger Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Parameterized+Trigger+Plugin)
+for a simple way to do this with jenkins.
 
 ### see also
 

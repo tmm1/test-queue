@@ -6,12 +6,14 @@ class MiniTestEqual < MiniTest::Unit::TestCase
   end
 end
 
-class MiniTestSleep < MiniTest::Unit::TestCase
-  def test_sleep
-    start = Time.now
-    sleep 0.25
-    assert_in_delta Time.now-start, 0.25, 0.02
-  end
+500.times do |i|
+  Object.const_set("MiniTestSleep#{i}", Class.new(MiniTest::Unit::TestCase) do
+    define_method('test_sleep') do
+      start = Time.now
+      sleep(0.25)
+      assert_in_delta Time.now-start, 0.25, 0.02
+    end
+  end)
 end
 
 class MiniTestFailure < MiniTest::Unit::TestCase

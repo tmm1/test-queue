@@ -6,11 +6,13 @@ describe 'RSpecEqual' do
   end
 end
 
-describe 'RSpecSleep' do
-  it 'sleeps' do
-    start = Time.now
-    sleep 0.25
-    (Time.now-start).should be_within(0.02).of(0.25)
+500.times do |i|
+  describe "RSpecSleep(#{i})" do
+    it "sleeps" do
+      start = Time.now
+      sleep(0.25)
+      (Time.now-start).should be_within(0.02).of(0.25)
+    end
   end
 end
 

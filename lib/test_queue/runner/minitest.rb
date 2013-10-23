@@ -61,7 +61,8 @@ module TestQueue
         num_tests = worker.lines.grep(/ errors?, /).first
         failures  = worker.lines.select{ |line|
           line if (line =~ /^Finished/) ... (line =~ / errors?, /)
-        }[1..-2].join("\n")
+        }[1..-2]
+        failures = failures.join("\n") if failures
 
         [ num_tests, failures ]
       end
