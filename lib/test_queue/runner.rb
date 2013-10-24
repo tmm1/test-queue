@@ -61,7 +61,7 @@ module TestQueue
 
     def stats
       @stats ||=
-        if File.exists?(file = '.test_queue_stats')
+        if File.exists?(file = stats_file)
           Marshal.load(IO.binread(file)) || {}
         else
           {}
@@ -110,7 +110,7 @@ module TestQueue
       puts
 
       if @stats
-        File.open('.test_queue_stats', 'wb') do |f|
+        File.open(stats_file, 'wb') do |f|
           f.write Marshal.dump(stats)
         end
       end
@@ -120,6 +120,11 @@ module TestQueue
     end
 
     def summarize
+    end
+
+    def stats_file
+      ENV['TEST_QUEUE_STATS'] ||
+      '.test_queue_stats'
     end
 
     def execute_sequential
