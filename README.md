@@ -68,6 +68,19 @@ class MyAppTestRunner < TestQueue::Runner::MiniTest
     $redis.client.db = num
     $redis.client.reconnect
   end
+
+  def prepare(concurrency)
+    # create mysql databases exists with correct schema
+    concurrency.times do |i|
+      # ...
+    end
+  end
+
+  def around_filter(suite)
+    $stats.timing("test.#{suite}.runtime") do
+      yield(suite)
+    end
+  end
 end
 
 CustomMiniTestRunner.new.execute

@@ -183,6 +183,8 @@ module TestQueue
     end
 
     def spawn_workers
+      prepare(@concurrency)
+
       @concurrency.times do |i|
         num = i+1
 
@@ -213,6 +215,13 @@ module TestQueue
       puts
 
       after_fork(num)
+    end
+
+    def prepare(concurrency)
+    end
+
+    def around_filter(suite)
+      yield(suite)
     end
 
     def after_fork(num)
