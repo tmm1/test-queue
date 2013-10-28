@@ -2,11 +2,12 @@ module TestQueue
   class Iterator
     attr_reader :stats, :sock
 
-    def initialize(sock)
+    def initialize(sock, filter=nil)
       @done = false
       @stats = {}
       @procline = $0
       @sock = sock
+      @filter = filter
       if @sock =~ /^(.+):(\d+)$/
         @tcp_address = $1
         @tcp_port = $2.to_i
@@ -28,7 +29,11 @@ module TestQueue
 
           $0 = "#{@procline} - #{item.respond_to?(:description) ? item.description : item}"
           start = Time.now
-          yield item
+          if @filter
+            @filter.call(item){ yield item }
+          else
+            yield item
+          end
           @stats[item] = Time.now - start
         else
           break

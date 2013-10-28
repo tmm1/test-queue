@@ -78,7 +78,7 @@ class MyAppTestRunner < TestQueue::Runner::MiniTest
 
   def around_filter(suite)
     $stats.timing("test.#{suite}.runtime") do
-      yield(suite)
+      yield
     end
   end
 end

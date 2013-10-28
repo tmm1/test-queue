@@ -191,7 +191,7 @@ module TestQueue
         pid = fork do
           @server.close if @server
 
-          iterator = Iterator.new(relay?? @relay : @socket)
+          iterator = Iterator.new(relay?? @relay : @socket, method(:around_filter))
           after_fork_internal(num, iterator)
           exit! run_worker(iterator) || 0
         end
@@ -221,7 +221,7 @@ module TestQueue
     end
 
     def around_filter(suite)
-      yield(suite)
+      yield
     end
 
     def after_fork(num)
