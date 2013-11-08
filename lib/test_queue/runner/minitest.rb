@@ -45,7 +45,8 @@ module TestQueue
   class Runner
     class MiniTest < Runner
       def initialize
-        super(::MiniTest::Unit::TestCase.original_test_suites.sort_by{ |s| -(stats[s.to_s] || 0) })
+        tests = ::MiniTest::Unit::TestCase.original_test_suites.sort_by{ |s| -(stats[s.to_s] || 0) }
+        super(tests)
       end
 
       def run_worker(iterator)

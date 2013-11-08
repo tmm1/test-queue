@@ -2,11 +2,12 @@ module TestQueue
   class Iterator
     attr_reader :stats, :sock
 
-    def initialize(sock, filter=nil)
+    def initialize(sock, suites, filter=nil)
       @done = false
       @stats = {}
       @procline = $0
       @sock = sock
+      @suites = suites
       @filter = filter
       if @sock =~ /^(.+):(\d+)$/
         @tcp_address = $1
@@ -26,15 +27,16 @@ module TestQueue
           client.close
           item = Marshal.load(data)
           break if item.nil?
+          suite = @suites[item]
 
-          $0 = "#{@procline} - #{item.respond_to?(:description) ? item.description : item}"
+          $0 = "#{@procline} - #{suite.respond_to?(:description) ? suite.description : suite}"
           start = Time.now
           if @filter
-            @filter.call(item){ yield item }
+            @filter.call(suite){ yield suite }
           else
-            yield item
+            yield suite
           end
-          @stats[item] = Time.now - start
+          @stats[suite.to_s] = Time.now - start
         else
           break
         end
