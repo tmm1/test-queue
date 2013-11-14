@@ -15,16 +15,18 @@ class MiniTestQueueRunner < MiniTest::Unit
   end
 
   def _run_suite(suite, type)
-    output.print '    '
-    output.print suite
-    output.print ': '
+    if suite
+      output.print '    '
+      output.print suite
+      output.print ': '
 
-    start = Time.now
-    ret = super
-    diff = Time.now - start
+      start = Time.now
+      ret = super
+      diff = Time.now - start
 
-    output.puts("  <%.3f>" % diff)
-    ret
+      output.puts("  <%.3f>" % diff)
+      ret
+    end
   end
 
   self.runner = self.new
