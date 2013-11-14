@@ -7,6 +7,7 @@ spec = Gem::Specification.new do |s|
 
   s.authors = ["Aman Gupta"]
   s.email = "ruby@tmm1.net"
+  s.license = 'MIT'
 
   s.has_rdoc = false
   s.bindir = 'bin'
