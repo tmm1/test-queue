@@ -117,7 +117,10 @@ module TestQueue
       end
 
       summarize
-      exit! @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
+
+      estatus = @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
+      estatus = 255 if estatus > 255
+      exit!(estatus)
     end
 
     def summarize
