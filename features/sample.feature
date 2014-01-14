@@ -1,0 +1,25 @@
+Feature: Foobar
+  Scenario: Bar
+    Given a
+    When b
+    Then c
+  Scenario: Baz
+    Given a
+    When b
+    Then c
+  Scenario: Bam
+    Given a
+    When b
+    Then c
+  Scenario: Car
+    Given a
+    When b
+    Then c
+  Scenario: Caz
+    Given a
+    When b
+    Then c
+  Scenario: Cam
+    Given a
+    When b
+    Then c
