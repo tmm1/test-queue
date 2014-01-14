@@ -51,13 +51,13 @@ module TestQueue
 
       def summarize_worker(worker)
         worker.stats.each do |s, val|
-          stats[s.description] = val
+          stats[s] = val
         end
 
-        num_tests = worker.lines.grep(/ examples?, /).first
-        failures  = worker.output[/^Failures:\n\n(.*)\n^Finished/m, 1]
+        summary  = worker.lines.grep(/ examples?, /).first
+        failures = worker.output[/^Failures:\n\n(.*)\n^Finished/m, 1]
 
-        [ num_tests, failures ]
+        [ summary, failures ]
       end
     end
   end

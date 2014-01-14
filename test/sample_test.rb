@@ -6,7 +6,7 @@ class MiniTestEqual < MiniTest::Unit::TestCase
   end
 end
 
-500.times do |i|
+30.times do |i|
   Object.const_set("MiniTestSleep#{i}", Class.new(MiniTest::Unit::TestCase) do
     define_method('test_sleep') do
       start = Time.now
