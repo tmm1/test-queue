@@ -1,6 +1,6 @@
 spec = Gem::Specification.new do |s|
   s.name = 'test-queue'
-  s.version = '0.2.0'
+  s.version = '0.2.1'
   s.summary = 'parallel test runner'
   s.description = 'minitest/rspec parallel test runner for CI environments'
 
@@ -14,6 +14,7 @@ spec = Gem::Specification.new do |s|
   s.bindir = 'bin'
   s.executables << 'rspec-queue'
   s.executables << 'minitest-queue'
+  s.executables << 'cucumber-queue'
 
   s.add_development_dependency 'rspec', '~> 2.13'
   s.add_development_dependency 'minitest', '~> 4.7.3'
