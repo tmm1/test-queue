@@ -20,6 +20,7 @@ module TestQueue
 
       while true
         client = connect_to_master('POP')
+        break if client.nil?
         r, w, e = IO.select([client], nil, [client], nil)
         break if !e.empty?
 
@@ -58,6 +59,8 @@ module TestQueue
         end
       sock.puts(cmd)
       sock
+    rescue Errno::EPIPE
+      nil
     end
 
     include Enumerable
