@@ -59,9 +59,9 @@ module TestQueue
           stats[s.to_s] = val
         end
 
-        num_tests = worker.lines.grep(/ errors?, /).first
+        num_tests = worker.lines.grep(/, \d+ errors?, /).first
         failures  = worker.lines.select{ |line|
-          line if (line =~ /^Finished/) ... (line =~ / errors?, /)
+          line if (line =~ /^Finished/) ... (line =~ /, \d+ errors?, /)
         }[1..-2]
         failures = failures.join("\n") if failures
 
