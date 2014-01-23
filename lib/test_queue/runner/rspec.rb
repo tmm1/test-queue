@@ -42,7 +42,7 @@ module TestQueue
     class RSpec < Runner
       def initialize
         @rspec = ::RSpec::Core::QueueRunner.new
-        super(@rspec.example_groups.sort_by{ |s| -(stats[s.description] || 0) })
+        super(@rspec.example_groups.sort_by{ |s| -(stats[s.to_s] || 0) })
       end
 
       def run_worker(iterator)
