@@ -25,6 +25,11 @@ module TestQueue
     def initialize(queue, concurrency=nil, socket=nil, relay=nil)
       raise ArgumentError, 'array required' unless Array === queue
 
+      if forced = ENV['TEST_QUEUE_FORCE']
+        whitelist = Set.new(forced.split(/\s*,\s*/))
+        queue = queue.select{ |s| whitelist.include?(s.to_s) }
+      end
+
       @procline = $0
       @queue = queue
       @suites = queue.inject(Hash.new){ |hash, suite| hash.update suite.to_s => suite }

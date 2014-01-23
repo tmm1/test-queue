@@ -31,6 +31,7 @@ the workload and relay results back to a central master.
 - `TEST_QUEUE_SOCKET`: unix socket `path` (or tcp `address:port` pair) used for communication (default: `/tmp/test_queue_XXXXX.sock`)
 - `TEST_QUEUE_RELAY`: relay results back to a central master, specified as tcp `address:port`
 - `TEST_QUEUE_STATS`: `path` to cache build stats in-build CI runs (default: `.test_queue_stats`)
+- `TEST_QUEUE_FORCE`: comma separated list of suites to run
 
 ### usage
 
