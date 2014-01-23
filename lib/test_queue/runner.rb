@@ -26,8 +26,10 @@ module TestQueue
       raise ArgumentError, 'array required' unless Array === queue
 
       if forced = ENV['TEST_QUEUE_FORCE']
-        whitelist = Set.new(forced.split(/\s*,\s*/))
+        forced = forced.split(/\s*,\s*/)
+        whitelist = Set.new(forced)
         queue = queue.select{ |s| whitelist.include?(s.to_s) }
+        queue.sort_by!{ |s| forced.index(s.to_s) }
       end
 
       @procline = $0
