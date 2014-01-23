@@ -268,7 +268,7 @@ module TestQueue
 
     def worker_completed(worker)
       @completed << worker
-      puts worker.output if ENV['TEST_QUEUE_VERBOSE']
+      puts worker.output if ENV['TEST_QUEUE_VERBOSE'] || worker.status.exitstatus != 0
     end
 
     def distribute_queue
