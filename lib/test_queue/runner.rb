@@ -290,8 +290,10 @@ module TestQueue
           cmd = sock.gets.strip
           case cmd
           when 'POP'
-            data = Marshal.dump(@queue.shift.to_s)
-            sock.write(data)
+            if obj = @queue.shift
+              data = Marshal.dump(obj.to_s)
+              sock.write(data)
+            end
           when /^SLAVE (\d+)/
             num = $1.to_i
             remote_workers += num
