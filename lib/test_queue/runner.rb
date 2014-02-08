@@ -154,7 +154,7 @@ module TestQueue
       end
 
       until @workers.empty?
-        cleanup_worker
+        reap_worker
       end
     end
 
@@ -204,7 +204,9 @@ module TestQueue
 
           iterator = Iterator.new(relay?? @relay : @socket, @suites, method(:around_filter))
           after_fork_internal(num, iterator)
-          exit! run_worker(iterator) || 0
+          ret = run_worker(iterator) || 0
+          cleanup_worker
+          exit! ret
         end
 
         @workers[pid] = Worker.new(pid, num)
@@ -246,6 +248,9 @@ module TestQueue
       return 0 # exit status
     end
 
+    def cleanup_worker
+    end
+
     def summarize_worker(worker)
       num_tests = ''
       failures = ''
@@ -253,7 +258,7 @@ module TestQueue
       [ num_tests, failures ]
     end
 
-    def cleanup_worker(blocking=true)
+    def reap_worker(blocking=true)
       if pid = Process.waitpid(-1, blocking ? 0 : Process::WNOHANG) and worker = @workers.delete(pid)
         worker.status = $?
         worker.end_time = Time.now
@@ -284,7 +289,7 @@ module TestQueue
 
       until @queue.empty? && remote_workers == 0
         if IO.select([@server], nil, nil, 0.1).nil?
-          cleanup_worker(false) # check for worker deaths
+          reap_worker(false) # check for worker deaths
         else
           sock = @server.accept
           cmd = sock.gets.strip
@@ -311,7 +316,7 @@ module TestQueue
       stop_master
 
       until @workers.empty?
-        cleanup_worker
+        reap_worker
       end
     end
 
