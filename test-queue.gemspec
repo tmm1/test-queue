@@ -17,7 +17,7 @@ spec = Gem::Specification.new do |s|
   s.executables << 'cucumber-queue'
 
   s.add_development_dependency 'rspec', '~> 2.13'
-  s.add_development_dependency 'minitest', '~> 4.7.3'
+  s.add_development_dependency 'minitest', '>= 4.7.3'
   s.add_development_dependency 'cucumber', '~> 1.3.10'
 
   s.files = `git ls-files`.split("\n")
