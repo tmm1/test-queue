@@ -84,7 +84,7 @@ module TestQueue
         execute_parallel :
         execute_sequential
     ensure
-      summarize_internal
+      summarize_internal unless $!
     end
 
     def summarize_internal
