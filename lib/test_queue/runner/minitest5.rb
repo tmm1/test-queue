@@ -1,8 +1,21 @@
 require 'test_queue/runner'
 
-class MiniTest::Test
-  def self.runnables= runnables
-    @@runnables = runnables
+module ::MiniTest
+  class Test
+    def self.runnables= runnables
+      @@runnables = runnables
+    end
+  end
+
+  class ProgressReporter
+    # Override original method to make test-queue specific output
+    def record result
+      io.print '    '
+      io.print result.class
+      io.print ': '
+      io.print result.result_code
+      io.puts("  <%.3f>" % result.time)
+    end
   end
 end
 
