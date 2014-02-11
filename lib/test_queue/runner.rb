@@ -289,7 +289,7 @@ module TestQueue
 
       until @queue.empty? && remote_workers == 0
         if IO.select([@server], nil, nil, 0.1).nil?
-          reap_worker(false) # check for worker deaths
+          reap_worker(false) if @workers.any? # check for worker deaths
         else
           sock = @server.accept
           cmd = sock.gets.strip
