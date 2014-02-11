@@ -27,7 +27,7 @@ module TestQueue
         if data = client.read(65536)
           client.close
           item = Marshal.load(data)
-          break if item.nil?
+          break if item.nil? || item.empty?
           suite = @suites[item]
 
           $0 = "#{@procline} - #{suite.respond_to?(:description) ? suite.description : suite}"

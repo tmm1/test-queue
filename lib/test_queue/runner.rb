@@ -162,7 +162,7 @@ module TestQueue
       if relay?
         begin
           sock = connect_to_relay
-          sock.puts("SLAVE #{@concurrency}")
+          sock.puts("SLAVE #{@concurrency} #{Socket.gethostname}")
           sock.close
         rescue Errno::ECONNREFUSED
           STDERR.puts "*** Unable to connect to relay #{@relay}. Aborting.."
@@ -299,10 +299,11 @@ module TestQueue
               data = Marshal.dump(obj.to_s)
               sock.write(data)
             end
-          when /^SLAVE (\d+)/
+          when /^SLAVE (\d+) ([\w\.-]+)/
             num = $1.to_i
+            slave = $2
             remote_workers += num
-            STDERR.puts "*** slave connected with additional #{num} workers"
+            STDERR.puts "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
           when /^WORKER (\d+)/
             data = sock.read($1.to_i)
             worker = Marshal.load(data)
