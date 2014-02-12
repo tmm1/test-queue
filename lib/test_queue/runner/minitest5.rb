@@ -23,7 +23,7 @@ module TestQueue
   class Runner
     class MiniTest < Runner
       def initialize
-        tests = ::MiniTest::Test.runnables.sort_by { |s| -(stats[s.to_s] || 0) }
+        tests = ::MiniTest::Test.runnables.reject { |s| s.runnable_methods.empty? }.sort_by { |s| -(stats[s.to_s] || 0) }
         super(tests)
       end
 
