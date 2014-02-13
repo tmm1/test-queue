@@ -1,6 +1,14 @@
 require 'test_queue/runner'
 
-module ::MiniTest
+module MiniTest
+  def self.__run reporter, options
+    suites = Runnable.runnables
+
+    # Run the serial tests first after they complete, run the parallels tests
+    # We already sort suites based on its test_order at TestQueue::Runner::Minitest#initialize.
+    suites.map { |suite| suite.run reporter, options }
+  end
+
   class Test
     def self.runnables= runnables
       @@runnables = runnables
@@ -23,7 +31,13 @@ module TestQueue
   class Runner
     class MiniTest < Runner
       def initialize
-        tests = ::MiniTest::Test.runnables.reject { |s| s.runnable_methods.empty? }.sort_by { |s| -(stats[s.to_s] || 0) }
+        tests = ::MiniTest::Test.runnables.reject { |s|
+          s.runnable_methods.empty?
+        }.sort_by { |s|
+          -(stats[s.to_s] || 0)
+        }.partition { |s|
+          s.test_order == :parallel
+        }.reverse.flatten
         super(tests)
       end
 
