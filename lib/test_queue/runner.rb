@@ -224,7 +224,7 @@ module TestQueue
 
       $0 = "test-queue worker [#{num}]"
       puts
-      puts "==> Starting #$0 (#{Process.pid}) - iterating over #{iterator.sock}"
+      puts "==> Starting #$0 (#{Process.pid} on #{Socket.gethostname}) - iterating over #{iterator.sock}"
       puts
 
       after_fork(num)
