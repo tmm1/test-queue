@@ -143,10 +143,10 @@ module TestQueue
     end
 
     def execute_parallel
+      start_master
       prepare(@concurrency)
       @prepared_time = Time.now
-
-      start_master
+      start_relay if relay?
       spawn_workers
       distribute_queue
     ensure
@@ -162,16 +162,7 @@ module TestQueue
     end
 
     def start_master
-      if relay?
-        begin
-          sock = connect_to_relay
-          sock.puts("SLAVE #{@concurrency} #{Socket.gethostname}")
-          sock.close
-        rescue Errno::ECONNREFUSED
-          STDERR.puts "*** Unable to connect to relay #{@relay}. Aborting.."
-          exit! 1
-        end
-      else
+      if !relay?
         if @socket =~ /^(?:(.+):)?(\d+)$/
           address = $1 || '0.0.0.0'
           port = $2.to_i
@@ -186,6 +177,17 @@ module TestQueue
       desc = "test-queue master (#{relay?? "relaying to #{@relay}" : @socket})"
       puts "Starting #{desc}"
       $0 = "#{desc} - #{@procline}"
+    end
+
+    def start_relay
+      return unless relay?
+
+      sock = connect_to_relay
+      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname}")
+      sock.close
+    rescue Errno::ECONNREFUSED
+      STDERR.puts "*** Unable to connect to relay #{@relay}. Aborting.."
+      exit! 1
     end
 
     def stop_master
