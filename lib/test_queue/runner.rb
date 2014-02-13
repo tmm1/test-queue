@@ -143,6 +143,9 @@ module TestQueue
     end
 
     def execute_parallel
+      prepare(@concurrency)
+      @prepared_time = Time.now
+
       start_master
       spawn_workers
       distribute_queue
@@ -194,8 +197,6 @@ module TestQueue
     end
 
     def spawn_workers
-      prepare(@concurrency)
-
       @concurrency.times do |i|
         num = i+1
 
