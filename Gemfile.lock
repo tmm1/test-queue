@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    test-queue (0.2.7)
+    test-queue (0.2.8)
 
 GEM
   remote: https://rubygems.org/
