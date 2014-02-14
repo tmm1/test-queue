@@ -54,10 +54,8 @@ module TestQueue
           stats[s] = val
         end
 
-        summary  = worker.lines.grep(/ examples?, /).first
-        failures = worker.output[/^Failures:\n\n(.*)\n^Finished/m, 1]
-
-        [ summary, failures ]
+        worker.summary  = worker.lines.grep(/ examples?, /).first
+        worker.failure_output = worker.output[/^Failures:\n\n(.*)\n^Finished/m, 1]
       end
     end
   end

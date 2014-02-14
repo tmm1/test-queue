@@ -5,6 +5,7 @@ module TestQueue
   class Worker
     attr_accessor :pid, :status, :output, :stats, :num, :host
     attr_accessor :start_time, :end_time
+    attr_accessor :summary, :failure_output
 
     def initialize(pid, num)
       @pid = pid
@@ -94,12 +95,12 @@ module TestQueue
 
       @failures = ''
       @completed.each do |worker|
-        summary, failures = summarize_worker(worker)
-        @failures << failures if failures
+        summarize_worker(worker)
+        @failures << worker.failure_output if worker.failure_output
 
         puts "    [%2d] %60s      %4d suites in %.4fs      (pid %d exit %d%s)" % [
           worker.num,
-          summary,
+          worker.summary,
           worker.stats.size,
           worker.end_time - worker.start_time,
           worker.pid,
@@ -255,10 +256,8 @@ module TestQueue
     end
 
     def summarize_worker(worker)
-      num_tests = ''
-      failures = ''
-
-      [ num_tests, failures ]
+      worker.summary = ''
+      worker.failure_output = ''
     end
 
     def reap_worker(blocking=true)
