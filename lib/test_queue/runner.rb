@@ -5,6 +5,7 @@ module TestQueue
   class Worker
     attr_accessor :pid, :status, :output, :stats, :num, :host
     attr_accessor :start_time, :end_time
+    attr_accessor :summary, :failure_output
 
     def initialize(pid, num)
       @pid = pid
@@ -24,6 +25,13 @@ module TestQueue
 
     def initialize(queue, concurrency=nil, socket=nil, relay=nil)
       raise ArgumentError, 'array required' unless Array === queue
+
+      if forced = ENV['TEST_QUEUE_FORCE']
+        forced = forced.split(/\s*,\s*/)
+        whitelist = Set.new(forced)
+        queue = queue.select{ |s| whitelist.include?(s.to_s) }
+        queue.sort_by!{ |s| forced.index(s.to_s) }
+      end
 
       @procline = $0
       @queue = queue
@@ -77,7 +85,7 @@ module TestQueue
         execute_parallel :
         execute_sequential
     ensure
-      summarize_internal
+      summarize_internal unless $!
     end
 
     def summarize_internal
@@ -87,12 +95,12 @@ module TestQueue
 
       @failures = ''
       @completed.each do |worker|
-        summary, failures = summarize_worker(worker)
-        @failures << failures if failures
+        summarize_worker(worker)
+        @failures << worker.failure_output if worker.failure_output
 
         puts "    [%2d] %60s      %4d suites in %.4fs      (pid %d exit %d%s)" % [
           worker.num,
-          summary,
+          worker.summary,
           worker.stats.size,
           worker.end_time - worker.start_time,
           worker.pid,
@@ -117,7 +125,10 @@ module TestQueue
       end
 
       summarize
-      exit! @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
+
+      estatus = @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
+      estatus = 255 if estatus > 255
+      exit!(estatus)
     end
 
     def summarize
@@ -134,6 +145,9 @@ module TestQueue
 
     def execute_parallel
       start_master
+      prepare(@concurrency)
+      @prepared_time = Time.now
+      start_relay if relay?
       spawn_workers
       distribute_queue
     ensure
@@ -144,21 +158,12 @@ module TestQueue
       end
 
       until @workers.empty?
-        cleanup_worker
+        reap_worker
       end
     end
 
     def start_master
-      if relay?
-        begin
-          sock = connect_to_relay
-          sock.puts("SLAVE #{@concurrency}")
-          sock.close
-        rescue Errno::ECONNREFUSED
-          STDERR.puts "*** Unable to connect to relay #{@relay}. Aborting.."
-          exit! 1
-        end
-      else
+      if !relay?
         if @socket =~ /^(?:(.+):)?(\d+)$/
           address = $1 || '0.0.0.0'
           port = $2.to_i
@@ -175,6 +180,17 @@ module TestQueue
       $0 = "#{desc} - #{@procline}"
     end
 
+    def start_relay
+      return unless relay?
+
+      sock = connect_to_relay
+      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname}")
+      sock.close
+    rescue Errno::ECONNREFUSED
+      STDERR.puts "*** Unable to connect to relay #{@relay}. Aborting.."
+      exit! 1
+    end
+
     def stop_master
       return if relay?
 
@@ -184,8 +200,6 @@ module TestQueue
     end
 
     def spawn_workers
-      prepare(@concurrency)
-
       @concurrency.times do |i|
         num = i+1
 
@@ -194,7 +208,9 @@ module TestQueue
 
           iterator = Iterator.new(relay?? @relay : @socket, @suites, method(:around_filter))
           after_fork_internal(num, iterator)
-          exit! run_worker(iterator) || 0
+          ret = run_worker(iterator) || 0
+          cleanup_worker
+          exit! ret
         end
 
         @workers[pid] = Worker.new(pid, num)
@@ -212,7 +228,7 @@ module TestQueue
 
       $0 = "test-queue worker [#{num}]"
       puts
-      puts "==> Starting #$0 (#{Process.pid}) - iterating over #{iterator.sock}"
+      puts "==> Starting #$0 (#{Process.pid} on #{Socket.gethostname}) - iterating over #{iterator.sock}"
       puts
 
       after_fork(num)
@@ -236,14 +252,15 @@ module TestQueue
       return 0 # exit status
     end
 
-    def summarize_worker(worker)
-      num_tests = ''
-      failures = ''
-
-      [ num_tests, failures ]
+    def cleanup_worker
     end
 
-    def cleanup_worker(blocking=true)
+    def summarize_worker(worker)
+      worker.summary = ''
+      worker.failure_output = ''
+    end
+
+    def reap_worker(blocking=true)
       if pid = Process.waitpid(-1, blocking ? 0 : Process::WNOHANG) and worker = @workers.delete(pid)
         begin
           worker.status = $?
@@ -267,7 +284,7 @@ module TestQueue
 
     def worker_completed(worker)
       @completed << worker
-      puts worker.output if ENV['TEST_QUEUE_VERBOSE']
+      puts worker.output if ENV['TEST_QUEUE_VERBOSE'] || worker.status.exitstatus != 0
     end
 
     def distribute_queue
@@ -276,18 +293,21 @@ module TestQueue
 
       until @queue.empty? && remote_workers == 0
         if IO.select([@server], nil, nil, 0.1).nil?
-          cleanup_worker(false) # check for worker deaths
+          reap_worker(false) if @workers.any? # check for worker deaths
         else
           sock = @server.accept
           cmd = sock.gets.strip
           case cmd
           when 'POP'
-            data = Marshal.dump(@queue.shift.to_s)
-            sock.write(data)
-          when /^SLAVE (\d+)/
+            if obj = @queue.shift
+              data = Marshal.dump(obj.to_s)
+              sock.write(data)
+            end
+          when /^SLAVE (\d+) ([\w\.-]+)/
             num = $1.to_i
+            slave = $2
             remote_workers += num
-            STDERR.puts "*** slave connected with additional #{num} workers"
+            STDERR.puts "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
           when /^WORKER (\d+)/
             data = sock.read($1.to_i)
             worker = Marshal.load(data)
@@ -301,7 +321,7 @@ module TestQueue
       stop_master
 
       until @workers.empty?
-        cleanup_worker
+        reap_worker
       end
     end
 

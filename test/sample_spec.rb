@@ -6,7 +6,7 @@ describe 'RSpecEqual' do
   end
 end
 
-500.times do |i|
+30.times do |i|
   describe "RSpecSleep(#{i})" do
     it "sleeps" do
       start = Time.now

@@ -20,13 +20,14 @@ module TestQueue
 
       while true
         client = connect_to_master('POP')
+        break if client.nil?
         r, w, e = IO.select([client], nil, [client], nil)
         break if !e.empty?
 
         if data = client.read(65536)
           client.close
           item = Marshal.load(data)
-          break if item.nil?
+          break if item.nil? || item.empty?
           suite = @suites[item]
           break if suite.nil?
 
@@ -59,6 +60,8 @@ module TestQueue
         end
       sock.puts(cmd)
       sock
+    rescue Errno::EPIPE
+      nil
     end
 
     include Enumerable
