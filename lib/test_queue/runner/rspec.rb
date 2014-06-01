@@ -2,25 +2,24 @@ require 'test_queue/runner'
 require 'rspec/core'
 
 module RSpec::Core
-  class QueueRunner < CommandLine
+  class QueueRunner < Runner
     def initialize
-      super(ARGV)
-      @configuration.output_stream = $stdout
-      @configuration.error_stream  = $stderr
+      options = ::RSpec::Core::ConfigurationOptions.new(ARGV)
+      super(options)
     end
 
     def example_groups
-      @options.configure(@configuration)
-      @configuration.load_spec_files
-      @world.announce_filters
-      @world.example_groups
+      setup($stderr, $stdout)
+      @world.ordered_example_groups
     end
 
-    def run_each(iterator)
-      @configuration.reporter.report(0, @configuration.randomize? ? @configuration.seed : nil) do |reporter|
+    def run_specs(iterator)
+      @configuration.reporter.report(@world.ordered_example_groups.count) do |reporter|
         begin
-          @configuration.run_hook(:before, :suite)
-          iterator.map {|g|
+          hook_context = SuiteHookContext.new
+          @configuration.hooks.run(:before, :suite, hook_context)
+
+          iterator.map { |g|
             print "    #{g.description}: "
             start = Time.now
             ret = g.run(reporter)
@@ -30,7 +29,7 @@ module RSpec::Core
             ret
           }.all? ? 0 : @configuration.failure_exit_code
         ensure
-          @configuration.run_hook(:after, :suite)
+          @configuration.hooks.run(:after, :suite, hook_context)
         end
       end
     end
@@ -46,7 +45,7 @@ module TestQueue
       end
 
       def run_worker(iterator)
-        @rspec.run_each(iterator)
+        @rspec.run_specs(iterator).to_i
       end
 
       def summarize_worker(worker)
