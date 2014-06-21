@@ -1,11 +1,5 @@
 #!/usr/bin/env ruby
 require 'test_queue'
-begin
-  require 'minitest'
-  require 'test_queue/runner/minitest5'
-rescue LoadError => e
-  require 'minitest/unit'
-  require 'test_queue/runner/minitest'
-end
+require 'test_queue/runner/minitest'
 ARGV.each{ |f| require(f) }
 TestQueue::Runner::MiniTest.new.execute
