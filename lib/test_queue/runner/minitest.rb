@@ -14,13 +14,11 @@ module TestQueue
           stats[s.to_s] = val
         end
 
-        num_tests = worker.lines.grep(/, \d+ errors?, /).first
+        worker.summary = worker.lines.grep(/, \d+ errors?, /).first
         failures  = worker.lines.select{ |line|
           line if (line =~ /^Finished/) ... (line =~ /, \d+ errors?, /)
         }[1..-2]
-        failures = failures.join("\n") if failures
-
-        [ num_tests, failures ]
+        worker.failure_output = failures.join("\n") if failures
       end
     end
   end

@@ -23,9 +23,8 @@ module TestQueue
         errors   = lines.select{ |line| line =~ /^ERROR/ }
         warnings = lines.select{ |line| line =~ /^WARNING/ }
 
-        summary = "#{files.size} files, #{warnings.size} warnings, #{errors.size} errors"
-
-        [summary, errors.join("\n")]
+        worker.summary = "#{files.size} files, #{warnings.size} warnings, #{errors.size} errors"
+        worker.failure_output = errors.join("\n")
       end
     end
   end

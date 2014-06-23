@@ -38,10 +38,8 @@ module TestQueue
         end
 
         output = worker.output.gsub(/\e\[\d+./,'')
-        summary  = output.split("\n").grep(/^\d+ (scenarios?|steps?)/).first
-        failures = output.scan(/^Failing Scenarios:\n(.*)\n\d+ scenarios?/m).join("\n")
-
-        [ summary, failures ]
+        worker.summary  = output.split("\n").grep(/^\d+ (scenarios?|steps?)/).first
+        worker.failure_output = output.scan(/^Failing Scenarios:\n(.*)\n\d+ scenarios?/m).join("\n")
       end
     end
   end
