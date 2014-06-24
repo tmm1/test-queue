@@ -25,6 +25,18 @@ module MiniTest
       io.puts("  <%.3f>" % result.time)
     end
   end
+
+  begin
+    require 'minitest/minitest_reporter_plugin'
+
+    class << self
+      private
+      def total_count(options)
+        0
+      end
+    end
+  rescue LoadError
+  end
 end
 
 module TestQueue

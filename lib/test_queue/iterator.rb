@@ -16,7 +16,7 @@ module TestQueue
     end
 
     def each
-      fail 'already used this iterator' if @done
+      fail "already used this iterator. previous caller: #@done" if @done
 
       while true
         client = connect_to_master('POP')
@@ -44,7 +44,7 @@ module TestQueue
       end
     rescue Errno::ENOENT, Errno::ECONNRESET, Errno::ECONNREFUSED
     ensure
-      @done = true
+      @done = caller.first
       File.open("/tmp/test_queue_worker_#{$$}_stats", "wb") do |f|
         f.write Marshal.dump(@stats)
       end
