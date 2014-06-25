@@ -2,7 +2,7 @@ require 'rspec'
 
 describe 'RSpecEqual' do
   it 'checks equality' do
-    1.should equal(1)
+    expect(1).to eq 1
   end
 end
 
@@ -11,13 +11,13 @@ end
     it "sleeps" do
       start = Time.now
       sleep(0.25)
-      (Time.now-start).should be_within(0.02).of(0.25)
+      expect(Time.now-start).to be_within(0.02).of(0.25)
     end
   end
 end
 
 describe 'RSpecFailure' do
   it 'fails' do
-    :foo.should eq(:bar)
+    expect(:foo).to eq :bar
   end
 end
