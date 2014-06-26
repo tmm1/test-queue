@@ -210,7 +210,7 @@ module TestQueue
           after_fork_internal(num, iterator)
           ret = run_worker(iterator) || 0
           cleanup_worker
-          exit! ret
+          Kernel.exit! ret
         end
 
         @workers[pid] = Worker.new(pid, num)
