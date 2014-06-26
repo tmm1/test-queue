@@ -234,6 +234,9 @@ module TestQueue
       after_fork(num)
     end
 
+    # Run in the master before the fork. Used to create
+    # concurrency copies of any databases required by the
+    # test workers.
     def prepare(concurrency)
     end
 
@@ -241,9 +244,15 @@ module TestQueue
       yield
     end
 
+    # Prepare a worker for executing jobs after a fork.
     def after_fork(num)
     end
 
+    # Entry point for internal runner implementations. The iterator will yield
+    # jobs from the shared queue on the master.
+    #
+    # Returns nothing. exits 0 on success.
+    # exits N on error, where N is the number of failures.
     def run_worker(iterator)
       iterator.each do |item|
         puts "  #{item.inspect}"
