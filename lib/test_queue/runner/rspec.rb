@@ -1,10 +1,13 @@
 require 'test_queue/runner'
 require 'rspec/core'
 
-if ::RSpec::Core::Version::STRING.to_i == 2
+case ::RSpec::Core::Version::STRING.to_i
+when 2
   require_relative 'rspec2'
-else
+when 3
   require_relative 'rspec3'
+else
+  fail 'requires rspec version 2 or 3'
 end
 
 module TestQueue
