@@ -56,7 +56,7 @@ module TestQueue
         (ENV['TEST_QUEUE_RELAY_TIMEOUT'] && ENV['TEST_QUEUE_RELAY_TIMEOUT'].to_i) ||
         30
 
-      @run_id = ENV['TEST_QUEUE_RELAY_RUN'] || SecureRandom.hex(8)
+      @run_id = ENV['TEST_QUEUE_RELAY_TOKEN'] || SecureRandom.hex(8)
 
       @socket =
         socket ||
