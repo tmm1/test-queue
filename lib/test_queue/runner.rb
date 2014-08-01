@@ -192,6 +192,12 @@ module TestQueue
 
       sock = connect_to_relay
       sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{@run_id}")
+      response = sock.gets.strip
+      unless response == "OK"
+        STDERR.puts "*** Got non-OK response from master: #{response}"
+        sock.close
+        exit! 1
+      end
       sock.close
     rescue Errno::ECONNREFUSED
       STDERR.puts "*** Unable to connect to relay #{@relay}. Aborting.."
@@ -312,21 +318,24 @@ module TestQueue
           sock = @server.accept
           cmd = sock.gets.strip
           case cmd
-          when /^POP (\w+)/
-            run_id = $1
+          when /^POP/
             # If we have a slave from a different test run, don't respond, and it will consider the test run done.
-            if @run_id == run_id
-              if obj = @queue.shift
-                data = Marshal.dump(obj.to_s)
-                sock.write(data)
-              end
-            else
-              STDERR.puts "*** Worker from run #{$1} connected to master for run #{@run_id}; ignoring."
+            if obj = @queue.shift
+              data = Marshal.dump(obj.to_s)
+              sock.write(data)
             end
-          when /^SLAVE (\d+) ([\w\.-]+)/
+          when /^SLAVE (\d+) ([\w\.-]+) (\w+)/
             num = $1.to_i
             slave = $2
-            remote_workers += num
+            run_id = $3
+            if run_id == @run_id
+              # If we have a slave from a different test run, don't respond, and it will consider the test run done.
+              sock.write("OK\n")
+              remote_workers += num
+            else
+              STDERR.puts "*** Worker from run #{run_id} connected to master for run #{@run_id}; ignoring."
+              sock.write("WRONG RUN\n")
+            end
             STDERR.puts "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
           when /^WORKER (\d+)/
             data = sock.read($1.to_i)

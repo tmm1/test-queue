@@ -92,11 +92,13 @@ CustomMiniTestRunner.new.execute
 ### distributed mode
 
 To use distributed mode, the central master must listen on a tcp port. Additional masters can be booted
-in relay mode to connect to the central master.
+in relay mode to connect to the central master. Workers must provide a TEST_QUEUE_RELAY_TOKEN to match
+the master's.
 
 ```
-$ TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec minitest-queue ./test/sample_test.rb
-$ TEST_QUEUE_RELAY=0.0.0.0:12345  bundle exec minitest-queue ./test/sample_test.rb
+$ TEST_QUEUE_RELAY_TOKEN=123 TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec minitest-queue ./test/sample_test.rb
+$ TEST_QUEUE_RELAY_TOKEN=123 TEST_QUEUE_RELAY=0.0.0.0:12345  bundle exec minitest-queue ./test/sample_test.rb
+$ TEST_QUEUE_RELAY_TOKEN=123 ./test-multi.sh
 ```
 
 See the [Parameterized Trigger Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Parameterized+Trigger+Plugin)
