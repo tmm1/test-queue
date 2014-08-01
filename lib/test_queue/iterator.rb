@@ -2,13 +2,14 @@ module TestQueue
   class Iterator
     attr_reader :stats, :sock
 
-    def initialize(sock, suites, filter=nil)
+    def initialize(sock, suites, run_id, filter=nil)
       @done = false
       @stats = {}
       @procline = $0
       @sock = sock
       @suites = suites
       @filter = filter
+      @run_id = run_id
       if @sock =~ /^(.+):(\d+)$/
         @tcp_address = $1
         @tcp_port = $2.to_i
@@ -19,7 +20,7 @@ module TestQueue
       fail "already used this iterator. previous caller: #@done" if @done
 
       while true
-        client = connect_to_master('POP')
+        client = connect_to_master("POP #{@run_id}")
         break if client.nil?
         r, w, e = IO.select([client], nil, [client], nil)
         break if !e.empty?

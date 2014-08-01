@@ -1,5 +1,6 @@
 require 'socket'
 require 'fileutils'
+require 'securerandom'
 
 module TestQueue
   class Worker
@@ -54,6 +55,8 @@ module TestQueue
       @slave_connection_timeout =
         (ENV['TEST_QUEUE_RELAY_TIMEOUT'] && ENV['TEST_QUEUE_RELAY_TIMEOUT'].to_i) ||
         30
+
+      @run_id = ENV['TEST_QUEUE_RELAY_RUN'] || SecureRandom.hex(8)
 
       @socket =
         socket ||
@@ -188,7 +191,7 @@ module TestQueue
       return unless relay?
 
       sock = connect_to_relay
-      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname}")
+      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{@run_id}")
       sock.close
     rescue Errno::ECONNREFUSED
       STDERR.puts "*** Unable to connect to relay #{@relay}. Aborting.."
@@ -210,7 +213,7 @@ module TestQueue
         pid = fork do
           @server.close if @server
 
-          iterator = Iterator.new(relay?? @relay : @socket, @suites, method(:around_filter))
+          iterator = Iterator.new(relay?? @relay : @socket, @suites, @run_id, method(:around_filter))
           after_fork_internal(num, iterator)
           ret = run_worker(iterator) || 0
           cleanup_worker
@@ -309,10 +312,16 @@ module TestQueue
           sock = @server.accept
           cmd = sock.gets.strip
           case cmd
-          when 'POP'
-            if obj = @queue.shift
-              data = Marshal.dump(obj.to_s)
-              sock.write(data)
+          when /^POP (\w+)/
+            run_id = $1
+            # If we have a slave from a different test run, don't respond, and it will consider the test run done.
+            if @run_id == run_id
+              if obj = @queue.shift
+                data = Marshal.dump(obj.to_s)
+                sock.write(data)
+              end
+            else
+              STDERR.puts "*** Worker from run #{$1} connected to master for run #{@run_id}; ignoring."
             end
           when /^SLAVE (\d+) ([\w\.-]+)/
             num = $1.to_i
