@@ -32,6 +32,8 @@ the workload and relay results back to a central master.
 - `TEST_QUEUE_RELAY`: relay results back to a central master, specified as tcp `address:port`
 - `TEST_QUEUE_STATS`: `path` to cache build stats in-build CI runs (default: `.test_queue_stats`)
 - `TEST_QUEUE_FORCE`: comma separated list of suites to run
+- `TEST_QUEUE_RELAY_TIMEOUT`: when using remote workers, the amount of time a worker will try to reconnect to start work
+- `TEST_QUEUE_RELAY_RUN`: when using remote workers, this must be the same on both workers and the server for remote workers to run tests.
 
 ### usage
 
