@@ -56,7 +56,7 @@ module TestQueue
         (ENV['TEST_QUEUE_RELAY_TIMEOUT'] && ENV['TEST_QUEUE_RELAY_TIMEOUT'].to_i) ||
         30
 
-      @run_id = ENV['TEST_QUEUE_RELAY_TOKEN'] || SecureRandom.hex(8)
+      @run_token = ENV['TEST_QUEUE_RELAY_TOKEN'] || SecureRandom.hex(8)
 
       @socket =
         socket ||
@@ -191,7 +191,7 @@ module TestQueue
       return unless relay?
 
       sock = connect_to_relay
-      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{@run_id}")
+      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{@run_token}")
       response = sock.gets.strip
       unless response == "OK"
         STDERR.puts "*** Got non-OK response from master: #{response}"
@@ -327,13 +327,13 @@ module TestQueue
           when /^SLAVE (\d+) ([\w\.-]+) (\w+)/
             num = $1.to_i
             slave = $2
-            run_id = $3
-            if run_id == @run_id
+            run_token = $3
+            if run_token == @run_token
               # If we have a slave from a different test run, don't respond, and it will consider the test run done.
               sock.write("OK\n")
               remote_workers += num
             else
-              STDERR.puts "*** Worker from run #{run_id} connected to master for run #{@run_id}; ignoring."
+              STDERR.puts "*** Worker from run #{run_token} connected to master for run #{@run_token}; ignoring."
               sock.write("WRONG RUN\n")
             end
             STDERR.puts "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
