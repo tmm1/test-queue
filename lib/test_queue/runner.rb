@@ -1,5 +1,6 @@
 require 'socket'
 require 'fileutils'
+require 'securerandom'
 
 module TestQueue
   class Worker
@@ -50,6 +51,12 @@ module TestQueue
         else
           2
         end
+
+      @slave_connection_timeout =
+        (ENV['TEST_QUEUE_RELAY_TIMEOUT'] && ENV['TEST_QUEUE_RELAY_TIMEOUT'].to_i) ||
+        30
+
+      @run_token = ENV['TEST_QUEUE_RELAY_TOKEN'] || SecureRandom.hex(8)
 
       @socket =
         socket ||
@@ -184,7 +191,13 @@ module TestQueue
       return unless relay?
 
       sock = connect_to_relay
-      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname}")
+      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{@run_token}")
+      response = sock.gets.strip
+      unless response == "OK"
+        STDERR.puts "*** Got non-OK response from master: #{response}"
+        sock.close
+        exit! 1
+      end
       sock.close
     rescue Errno::ECONNREFUSED
       STDERR.puts "*** Unable to connect to relay #{@relay}. Aborting.."
@@ -305,15 +318,24 @@ module TestQueue
           sock = @server.accept
           cmd = sock.gets.strip
           case cmd
-          when 'POP'
+          when /^POP/
+            # If we have a slave from a different test run, don't respond, and it will consider the test run done.
             if obj = @queue.shift
               data = Marshal.dump(obj.to_s)
               sock.write(data)
             end
-          when /^SLAVE (\d+) ([\w\.-]+)/
+          when /^SLAVE (\d+) ([\w\.-]+) (\w+)/
             num = $1.to_i
             slave = $2
-            remote_workers += num
+            run_token = $3
+            if run_token == @run_token
+              # If we have a slave from a different test run, don't respond, and it will consider the test run done.
+              sock.write("OK\n")
+              remote_workers += num
+            else
+              STDERR.puts "*** Worker from run #{run_token} connected to master for run #{@run_token}; ignoring."
+              sock.write("WRONG RUN\n")
+            end
             STDERR.puts "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
           when /^WORKER (\d+)/
             data = sock.read($1.to_i)
@@ -337,7 +359,19 @@ module TestQueue
     end
 
     def connect_to_relay
-      TCPSocket.new(*@relay.split(':'))
+      sock = nil
+      start = Time.now
+      puts "Attempting to connect for #{@slave_connection_timeout}s..."
+      while sock.nil?
+        begin
+          sock = TCPSocket.new(*@relay.split(':'))
+        rescue Errno::ECONNREFUSED => e
+          raise e if Time.now - start > @slave_connection_timeout
+          puts "Master not yet available, sleeping..."
+          sleep 0.5
+        end
+      end
+      sock
     end
 
     def relay_to_master(worker)
