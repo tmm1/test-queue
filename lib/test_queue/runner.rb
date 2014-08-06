@@ -337,7 +337,7 @@ module TestQueue
               sock.write("OK\n")
               remote_workers += num
             else
-              msg = "*** Worker from run #{run_token} connected to master for run #{@run_token}; ignoring."
+              STDERR.puts "*** Worker from run #{run_token} connected to master for run #{@run_token}; ignoring."
               sock.write("WRONG RUN\n")
             end
             message = "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
