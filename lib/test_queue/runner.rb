@@ -194,6 +194,7 @@ module TestQueue
 
       sock = connect_to_relay
       message = " #{@slave_message}" if @slave_message
+      message.gsub!(/(\r|\n)/, "") # Our "protocol" is newline-separated
       sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{@run_token}#{message}")
       response = sock.gets.strip
       unless response == "OK"
