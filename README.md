@@ -34,6 +34,7 @@ the workload and relay results back to a central master.
 - `TEST_QUEUE_FORCE`: comma separated list of suites to run
 - `TEST_QUEUE_RELAY_TIMEOUT`: when using remote workers, the amount of time a worker will try to reconnect to start work
 - `TEST_QUEUE_RELAY_TOKEN`: when using remote workers, this must be the same on both workers and the server for remote workers to run tests.
+- `TEST_QUEUE_SLAVE_MESSAGE`: when using remote workers, set this on a slave worker and it will appear on the slave's connection message on the master.
 
 ### usage
 
@@ -77,6 +78,9 @@ class MyAppTestRunner < TestQueue::Runner::MiniTest
     concurrency.times do |i|
       # ...
     end
+
+    # If this is a remote slave, tell the master something about us
+    @slave_message = "Output for slave 123: http://myhost.com/build/123"
   end
 
   def around_filter(suite)
