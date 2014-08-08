@@ -67,6 +67,8 @@ module TestQueue
         relay ||
         ENV['TEST_QUEUE_RELAY']
 
+      @slave_message = ENV["TEST_QUEUE_SLAVE_MESSAGE"] if ENV.has_key?("TEST_QUEUE_SLAVE_MESSAGE")
+
       if @relay == @socket
         STDERR.puts "*** Detected TEST_QUEUE_RELAY == TEST_QUEUE_SOCKET. Disabling relay mode."
         @relay = nil
@@ -191,7 +193,9 @@ module TestQueue
       return unless relay?
 
       sock = connect_to_relay
-      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{@run_token}")
+      message = " #{@slave_message}" if @slave_message
+      message.gsub!(/(\r|\n)/, "") # Our "protocol" is newline-separated
+      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{@run_token}#{message}")
       response = sock.gets.strip
       unless response == "OK"
         STDERR.puts "*** Got non-OK response from master: #{response}"
@@ -324,10 +328,11 @@ module TestQueue
               data = Marshal.dump(obj.to_s)
               sock.write(data)
             end
-          when /^SLAVE (\d+) ([\w\.-]+) (\w+)/
+          when /^SLAVE (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
             num = $1.to_i
             slave = $2
             run_token = $3
+            slave_message = $4
             if run_token == @run_token
               # If we have a slave from a different test run, don't respond, and it will consider the test run done.
               sock.write("OK\n")
@@ -336,7 +341,9 @@ module TestQueue
               STDERR.puts "*** Worker from run #{run_token} connected to master for run #{@run_token}; ignoring."
               sock.write("WRONG RUN\n")
             end
-            STDERR.puts "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
+            message = "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
+            message << " " + slave_message if slave_message
+            STDERR.puts message
           when /^WORKER (\d+)/
             data = sock.read($1.to_i)
             worker = Marshal.load(data)
