@@ -2,9 +2,17 @@ require 'test_queue/runner'
 require 'stringio'
 
 class MiniTestQueueRunner < MiniTest::Unit
-  def _run_suites(*)
+  def _run_suites(suites, type)
     self.class.output = $stdout
-    super
+
+    if defined?(ParallelEach)
+      # Ignore its _run_suites implementation since we don't handle it gracefully.
+      # If we don't do this #partition is called on the iterator and all suites
+      # distributed immediately, instead of picked up as workers are available.
+      suites.map { |suite| _run_suite suite, type }
+    else
+      super
+    end
   end
 
   def _run_anything(*)
