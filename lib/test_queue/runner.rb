@@ -37,6 +37,7 @@ module TestQueue
       @procline = $0
       @queue = queue
       @suites = queue.inject(Hash.new){ |hash, suite| hash.update suite.to_s => suite }
+
       @workers = {}
       @completed = []
 
