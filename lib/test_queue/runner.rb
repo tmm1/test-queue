@@ -265,26 +265,29 @@ module TestQueue
           sock = @server.accept
           case sock.gets.strip
           when /^POP/
-            item = @queue.shift
-            data = Marshal.dump(item.to_s)
-            sock.write(data)
+            if obj = @queue.shift
+              data = Marshal.dump(obj.to_s)
+              sock.write(data)
+            end
           when /^CONNECT_SLAVE (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
             num = $1.to_i
             slave = $2
             slave_token = $3
             slave_message = $4
 
-            if slave_token == @token
+            if slave_token == @run_token
+              # If we have a slave from a different test run, don't respond, and it will consider the test run done.
               sock.write("OK\n")
+              remote_workers += number
             else
-              STDERR.puts "*** Worker from run #{slave_token} connected to master for run #{@token}; ignoring."
+              STDERR.puts "*** Worker from run #{slave_token} connected to master for run #{@run_token}; ignoring."
               sock.write("WRONG RUN\n")
             end
 
-            text = "*** #{num} workers connected from #{slave} after #{Time.now - @start_time}s"
-            text << " " + slave_message if slave_message
+            message = "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
+            message << " " + slave_message if slave_message
 
-            STDERR.puts text
+            STDERR.puts message
           when /^WORKER_FINISHED (\d+)/
             data = sock.read($1.to_i)
             worker = Marshal.load(data)
