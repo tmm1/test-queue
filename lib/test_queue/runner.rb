@@ -55,13 +55,13 @@ module TestQueue
       @slave_message = ENV["TEST_QUEUE_SLAVE_MESSAGE"] if ENV.has_key?("TEST_QUEUE_SLAVE_MESSAGE")
 
       @server = Server.new(
-        socket_address: ENV['TEST_QUEUE_SOCKET'],
+        socket_address: socket || ENV['TEST_QUEUE_SOCKET'],
         client_connection_timeout: ENV['TEST_QUEUE_RELAY_TIMEOUT'] && ENV['TEST_QUEUE_RELAY_TIMEOUT'].to_i,
-        relay_address: ENV['TEST_QUEUE_RELAY'],
+        relay_address: relay || ENV['TEST_QUEUE_RELAY'],
         run_token: ENV['TEST_QUEUE_RELAY_TOKEN']
       )
 
-      if @server.relay
+      if @server.relay?
         @queue = []
       end
     end
@@ -147,7 +147,7 @@ module TestQueue
       @prepared_time = Time.now
       @server.start_relay(@concurrency, @slave_message)
       spawn_workers
-      distribute_queue
+      distribute_queue unless @server.relay?
     ensure
       @server.stop
 
@@ -256,7 +256,6 @@ module TestQueue
     end
 
     def distribute_queue
-      return if @server.relay?
       remote_workers = 0
 
       until @queue.empty? && remote_workers == 0
