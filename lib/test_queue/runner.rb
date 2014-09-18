@@ -27,6 +27,16 @@ module TestQueue
     def initialize(queue, concurrency=nil, socket=nil, relay=nil)
       raise ArgumentError, 'array required' unless Array === queue
 
+      if forced = ENV['TEST_QUEUE_FORCE']
+        forced = forced.split(/\s*,\s*/)
+        whitelist = Set.new(forced)
+        queue = queue.select{ |s| whitelist.include?(s.to_s) }
+        queue.sort_by!{ |s| forced.index(s.to_s) }
+      end
+
+      @procline = $0
+      @queue = queue
+      @suites = queue.inject(Hash.new){ |hash, suite| hash.update suite.to_s => suite }
       @workers = {}
       @completed = []
 
@@ -49,17 +59,6 @@ module TestQueue
         relay_address: ENV['TEST_QUEUE_RELAY'],
         run_token: ENV['TEST_QUEUE_RELAY_TOKEN']
       )
-
-      if forced = ENV['TEST_QUEUE_FORCE']
-        forced = forced.split(/\s*,\s*/)
-        whitelist = Set.new(forced)
-        queue = queue.select{ |s| whitelist.include?(s.to_s) }
-        queue.sort_by!{ |s| forced.index(s.to_s) }
-      end
-
-      @procline = $0
-      @queue = queue
-      @suites = queue.inject(Hash.new){ |hash, suite| hash.update suite.to_s => suite }
 
       if @server.relay
         @queue = []
@@ -189,7 +188,7 @@ module TestQueue
 
       $0 = "test-queue worker [#{num}]"
       puts
-      puts "==> Starting #$0 (#{Process.pid} on #{Socket.gethostname}) - iterating over #{iterator.client}"
+      puts "==> Starting #$0 (#{Process.pid} on #{Socket.gethostname}) - iterating over #{@server.socket_address}"
       puts
 
       after_fork(num)
@@ -256,6 +255,7 @@ module TestQueue
     end
 
     def distribute_queue
+      return if @server.relay?
       remote_workers = 0
 
       until @queue.empty? && remote_workers == 0
