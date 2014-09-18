@@ -134,7 +134,7 @@ module TestQueue
     def start(run_token, concurrency, slave_message)
       sock = connect
       message = [
-        "CONNECT_SLAVE",
+        "REGISTER_WORKER",
         concurrency,
         Socket.gethostname,
         run_token,
@@ -158,9 +158,8 @@ module TestQueue
       worker.host = Socket.gethostname
       data = Marshal.dump(worker)
 
-      puts "finishing worker"
       sock = connect
-      sock.puts("WORKER_FINISHED #{data.bytesize}")
+      sock.puts("REAP_WORKER #{data.bytesize}")
       sock.write(data)
     ensure
       sock.close if sock

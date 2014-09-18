@@ -269,7 +269,7 @@ module TestQueue
               data = Marshal.dump(obj.to_s)
               sock.write(data)
             end
-          when /^CONNECT_SLAVE (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
+          when /^REGISTER_WORKER (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
             num = $1.to_i
             slave = $2
             slave_token = $3
@@ -288,7 +288,7 @@ module TestQueue
             message << " " + slave_message if slave_message
 
             STDERR.puts message
-          when /^WORKER_FINISHED (\d+)/
+          when /^REAP_WORKER (\d+)/
             data = sock.read($1.to_i)
             worker = Marshal.load(data)
             worker_completed(worker)
