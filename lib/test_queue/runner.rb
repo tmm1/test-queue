@@ -47,7 +47,7 @@ module TestQueue
         socket_address: ENV['TEST_QUEUE_SOCKET'],
         client_connection_timeout: ENV['TEST_QUEUE_RELAY_TIMEOUT'] && ENV['TEST_QUEUE_RELAY_TIMEOUT'].to_i,
         relay_address: ENV['TEST_QUEUE_RELAY'],
-        token: ENV['TEST_QUEUE_RELAY_TOKEN']
+        run_token: ENV['TEST_QUEUE_RELAY_TOKEN']
       )
 
       if forced = ENV['TEST_QUEUE_FORCE']
@@ -263,17 +263,35 @@ module TestQueue
           reap_worker(false) if @workers.any? # check for worker deaths
         else
           sock = @server.accept
-          command = sock.cmd
-          case command
-          when Command::Pop
-            command.send_item(@queue.shift)
-          when Command::ConnectSlave
-            STDERR.puts command.message(@start_time)
-          when Command::WorkerFinished
-            worker = command.worker
+          case sock.gets.strip
+          when /^POP/
+            item = @queue.shift
+            data = Marshal.dump(item.to_s)
+            sock.write(data)
+          when /^CONNECT_SLAVE (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
+            num = $1.to_i
+            slave = $2
+            slave_token = $3
+            slave_message = $4
+
+            if slave_token == @token
+              sock.write("OK\n")
+            else
+              STDERR.puts "*** Worker from run #{slave_token} connected to master for run #{@token}; ignoring."
+              sock.write("WRONG RUN\n")
+            end
+
+            text = "*** #{num} workers connected from #{slave} after #{Time.now - @start_time}s"
+            text << " " + slave_message if slave_message
+
+            STDERR.puts text
+          when /^WORKER_FINISHED (\d+)/
+            data = sock.read($1.to_i)
+            worker = Marshal.load(data)
             worker_completed(worker)
             remote_workers -= 1
           end
+          sock.close
         end
       end
     ensure

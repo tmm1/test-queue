@@ -1,6 +1,6 @@
 module TestQueue
   class Server
-    attr_reader :relay, :socket_address, :client_connection_timeout, :client, :token
+    attr_reader :relay, :socket_address, :client_connection_timeout, :client, :run_token
 
     alias_method :relay?, :relay
 
@@ -9,12 +9,12 @@ module TestQueue
       client_connection_timeout: nil,
       relay: nil,
       relay_address: nil,
-      token: nil
+      run_token: nil
     )
       @socket_address = socket_address || "/tmp/test_queue_#{$$}_#{object_id}.sock"
       @client_connection_timeout = client_connection_timeout || 30
       @relay = relay || false
-      @token = token || SecureRandom.hex(8)
+      @run_token = run_token || SecureRandom.hex(8)
 
       if relay_address
         if relay_address == @socket_address
@@ -57,7 +57,7 @@ module TestQueue
 
     def start_relay(concurrency, slave_message)
       if relay?
-        @relay_client.start(token, concurrency, slave_message)
+        @relay_client.start(run_token, concurrency, slave_message)
       end
     end
 
@@ -72,7 +72,7 @@ module TestQueue
     end
 
     def accept
-      Sock.new(@server.accept, token)
+      @server.accept
     end
 
     def close
@@ -86,48 +86,12 @@ module TestQueue
       close rescue nil if @server
       @socket_address = @server = nil
     end
-
-    class Sock
-      def initialize(sock, token)
-        @sock = sock
-        @token = token
-      end
-
-      def cmd
-        command = @sock.gets.strip
-        case command
-        when Command::Pop.command
-          return Command::Pop.new(@sock)
-        when /^#{Command::ConnectSlave.command} (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
-          slave = Command::ConnectSlave.new(
-            @sock,
-            num: $1.to_i,
-            slave: $2,
-            slave_token: $3,
-            slave_message: $4
-          )
-
-          if slave.verify_token(@token)
-            slave
-          end
-        when /^#{Command::WorkerFinished.command} (\d+)/
-          Command::WorkerFinished.new(@sock)
-        else
-          puts "Unrecognized command: #{command}"
-        end
-      end
-
-      def close
-        @sock.close
-      end
-    end
-
   end
 
   class Client
     def pop
       client = connect
-      client.puts(Command::Pop.command)
+      client.puts("POP")
       _r, _w, e = IO.select([client], nil, [client], nil)
       return if !e.empty?
       if data = client.read(65536)
@@ -167,13 +131,13 @@ module TestQueue
   end
 
   class TCPRelayClient < TCPClient
-    def start(token, concurrency, slave_message)
+    def start(run_token, concurrency, slave_message)
       sock = connect
       message = [
-        Command::ConnectSlave.command,
+        "CONNECT_SLAVE",
         concurrency,
         Socket.gethostname,
-        token,
+        run_token,
         slave_message
       ].join(" ")
 
@@ -196,7 +160,7 @@ module TestQueue
 
       puts "finishing worker"
       sock = connect
-      sock.puts("#{Command::WorkerFinished.command} #{data.bytesize}")
+      sock.puts("WORKER_FINISHED #{data.bytesize}")
       sock.write(data)
     ensure
       sock.close if sock
