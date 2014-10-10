@@ -52,27 +52,16 @@ module TestQueue
           2
         end
 
-      @slave_connection_timeout =
-        (ENV['TEST_QUEUE_RELAY_TIMEOUT'] && ENV['TEST_QUEUE_RELAY_TIMEOUT'].to_i) ||
-        30
-
-      @run_token = ENV['TEST_QUEUE_RELAY_TOKEN'] || SecureRandom.hex(8)
-
-      @socket =
-        socket ||
-        ENV['TEST_QUEUE_SOCKET'] ||
-        "/tmp/test_queue_#{$$}_#{object_id}.sock"
-
-      @relay =
-        relay ||
-        ENV['TEST_QUEUE_RELAY']
-
       @slave_message = ENV["TEST_QUEUE_SLAVE_MESSAGE"] if ENV.has_key?("TEST_QUEUE_SLAVE_MESSAGE")
 
-      if @relay == @socket
-        STDERR.puts "*** Detected TEST_QUEUE_RELAY == TEST_QUEUE_SOCKET. Disabling relay mode."
-        @relay = nil
-      elsif @relay
+      @server = Server.new(
+        socket_address: socket || ENV['TEST_QUEUE_SOCKET'],
+        client_connection_timeout: ENV['TEST_QUEUE_RELAY_TIMEOUT'] && ENV['TEST_QUEUE_RELAY_TIMEOUT'].to_i,
+        relay_address: relay || ENV['TEST_QUEUE_RELAY'],
+        run_token: ENV['TEST_QUEUE_RELAY_TOKEN']
+      )
+
+      if @server.relay?
         @queue = []
       end
     end
@@ -153,14 +142,14 @@ module TestQueue
     end
 
     def execute_parallel
-      start_master
+      @server.start
       prepare(@concurrency)
       @prepared_time = Time.now
-      start_relay if relay?
+      @server.start_relay(@concurrency, @slave_message)
       spawn_workers
-      distribute_queue
+      distribute_queue unless @server.relay?
     ensure
-      stop_master
+      @server.stop
 
       @workers.each do |pid, worker|
         Process.kill 'KILL', pid
@@ -171,59 +160,14 @@ module TestQueue
       end
     end
 
-    def start_master
-      if !relay?
-        if @socket =~ /^(?:(.+):)?(\d+)$/
-          address = $1 || '0.0.0.0'
-          port = $2.to_i
-          @socket = "#$1:#$2"
-          @server = TCPServer.new(address, port)
-        else
-          FileUtils.rm(@socket) if File.exists?(@socket)
-          @server = UNIXServer.new(@socket)
-        end
-      end
-
-      desc = "test-queue master (#{relay?? "relaying to #{@relay}" : @socket})"
-      puts "Starting #{desc}"
-      $0 = "#{desc} - #{@procline}"
-    end
-
-    def start_relay
-      return unless relay?
-
-      sock = connect_to_relay
-      message = " #{@slave_message}" if @slave_message
-      message.gsub!(/(\r|\n)/, "") # Our "protocol" is newline-separated
-      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{@run_token}#{message}")
-      response = sock.gets.strip
-      unless response == "OK"
-        STDERR.puts "*** Got non-OK response from master: #{response}"
-        sock.close
-        exit! 1
-      end
-      sock.close
-    rescue Errno::ECONNREFUSED
-      STDERR.puts "*** Unable to connect to relay #{@relay}. Aborting.."
-      exit! 1
-    end
-
-    def stop_master
-      return if relay?
-
-      FileUtils.rm_f(@socket) if @socket && @server.is_a?(UNIXServer)
-      @server.close rescue nil if @server
-      @socket = @server = nil
-    end
-
     def spawn_workers
       @concurrency.times do |i|
         num = i+1
 
         pid = fork do
-          @server.close if @server
+          @server.close
 
-          iterator = Iterator.new(relay?? @relay : @socket, @suites, method(:around_filter))
+          iterator = Iterator.new(@server.client, @suites, method(:around_filter))
           after_fork_internal(num, iterator)
           ret = run_worker(iterator) || 0
           cleanup_worker
@@ -245,7 +189,7 @@ module TestQueue
 
       $0 = "test-queue worker [#{num}]"
       puts
-      puts "==> Starting #$0 (#{Process.pid} on #{Socket.gethostname}) - iterating over #{iterator.sock}"
+      puts "==> Starting #$0 (#{Process.pid} on #{Socket.gethostname}) - iterating over #{@server.socket_address}"
       puts
 
       after_fork(num)
@@ -301,7 +245,7 @@ module TestQueue
           FileUtils.rm(file)
         end
 
-        relay_to_master(worker) if relay?
+        @server.reap_worker(worker)
         worker_completed(worker)
       end
     end
@@ -312,39 +256,39 @@ module TestQueue
     end
 
     def distribute_queue
-      return if relay?
       remote_workers = 0
 
       until @queue.empty? && remote_workers == 0
-        if IO.select([@server], nil, nil, 0.1).nil?
+        if @server.waiting?
           reap_worker(false) if @workers.any? # check for worker deaths
         else
           sock = @server.accept
-          cmd = sock.gets.strip
-          case cmd
+          case sock.gets.strip
           when /^POP/
-            # If we have a slave from a different test run, don't respond, and it will consider the test run done.
             if obj = @queue.shift
               data = Marshal.dump(obj.to_s)
               sock.write(data)
             end
-          when /^SLAVE (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
+          when /^REGISTER_WORKER (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
             num = $1.to_i
             slave = $2
-            run_token = $3
+            slave_token = $3
             slave_message = $4
-            if run_token == @run_token
+
+            if slave_token == @run_token
               # If we have a slave from a different test run, don't respond, and it will consider the test run done.
               sock.write("OK\n")
-              remote_workers += num
+              remote_workers += number
             else
-              STDERR.puts "*** Worker from run #{run_token} connected to master for run #{@run_token}; ignoring."
+              STDERR.puts "*** Worker from run #{slave_token} connected to master for run #{@run_token}; ignoring."
               sock.write("WRONG RUN\n")
             end
+
             message = "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
             message << " " + slave_message if slave_message
+
             STDERR.puts message
-          when /^WORKER (\d+)/
+          when /^REAP_WORKER (\d+)/
             data = sock.read($1.to_i)
             worker = Marshal.load(data)
             worker_completed(worker)
@@ -354,42 +298,11 @@ module TestQueue
         end
       end
     ensure
-      stop_master
+      @server.stop
 
       until @workers.empty?
         reap_worker
       end
-    end
-
-    def relay?
-      !!@relay
-    end
-
-    def connect_to_relay
-      sock = nil
-      start = Time.now
-      puts "Attempting to connect for #{@slave_connection_timeout}s..."
-      while sock.nil?
-        begin
-          sock = TCPSocket.new(*@relay.split(':'))
-        rescue Errno::ECONNREFUSED => e
-          raise e if Time.now - start > @slave_connection_timeout
-          puts "Master not yet available, sleeping..."
-          sleep 0.5
-        end
-      end
-      sock
-    end
-
-    def relay_to_master(worker)
-      worker.host = Socket.gethostname
-      data = Marshal.dump(worker)
-
-      sock = connect_to_relay
-      sock.puts("WORKER #{data.bytesize}")
-      sock.write(data)
-    ensure
-      sock.close if sock
     end
   end
 end
