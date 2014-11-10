@@ -226,7 +226,7 @@ module TestQueue
           iterator = Iterator.new(relay?? @relay : @socket, @suites, method(:around_filter))
           after_fork_internal(num, iterator)
           ret = run_worker(iterator) || 0
-          cleanup_worker
+          cleanup_worker(ret)
           Kernel.exit! ret
         end
 
@@ -278,7 +278,7 @@ module TestQueue
       return 0 # exit status
     end
 
-    def cleanup_worker
+    def cleanup_worker(ret)
     end
 
     def summarize_worker(worker)
