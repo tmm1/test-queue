@@ -45,7 +45,7 @@ $ minitest-queue $(find test/ -name \*_test.rb)
 $ rspec-queue --format progress spec
 ```
 
-But the underlying `TestQueue::Runner::MiniTest` and `TestQueue::Runner::Rspec` are
+But the underlying `TestQueue::Runner::MiniTest` and `TestQueue::Runner::RSpec` are
 built to be subclassed by your application. I recommend checking a new
 executable into your project using one of these superclasses.
 
