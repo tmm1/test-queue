@@ -32,8 +32,7 @@ module TestQueue
   class Runner
     class TestUnit < Runner
       def initialize
-        c = Test::Unit::Collector::Descendant.new
-        @suite = c.collect
+        @suite = Test::Unit::Collector::Descendant.new.collect
         tests = @suite.tests.sort_by{ |s| -(stats[s.to_s] || 0) }
         super(tests)
       end
@@ -50,7 +49,7 @@ module TestQueue
         end
 
         worker.summary = worker.output.split("\n").grep(/^\d+ tests?/).first
-        worker.failure_output = worker.output.scan(/^Failure:\n(.*?)\n=======================*/m).join("\n")
+        worker.failure_output = worker.output.scan(/^Failure:\n(.*)\n=======================*/m).join("\n")
       end
     end
   end
