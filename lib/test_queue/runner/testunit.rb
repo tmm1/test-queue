@@ -5,7 +5,7 @@ require 'test/unit'
 require 'test/unit/collector/descendant'
 require 'test/unit/testresult'
 require 'test/unit/testsuite'
-require 'test/unit/testcase'
+require 'test/unit/ui/console/testrunner'
 
 class Test::Unit::TestSuite
   attr_accessor :iterator
@@ -34,14 +34,14 @@ module TestQueue
       def initialize
         c = Test::Unit::Collector::Descendant.new
         @suite = c.collect
-        tests = @suite.tests
+        tests = @suite.tests.sort_by{ |s| -(stats[s.to_s] || 0) }
         super(tests)
       end
 
       def run_worker(iterator)
         @suite.iterator = iterator
-        @suite.run(res = Test::Unit::TestResult.new) do |status, obj|
-        end
+        res = Test::Unit::UI::Console::TestRunner.new(@suite).start
+        res.run_count - res.pass_count
       end
 
       def summarize_worker(worker)
@@ -49,7 +49,8 @@ module TestQueue
           stats[s.to_s] = val
         end
 
-        p worker.output
+        worker.summary = worker.output.split("\n").grep(/^\d+ tests?/).first
+        worker.failure_output = worker.output.scan(/^Failure:\n(.*?)\n=======================*/m).join("\n")
       end
     end
   end
