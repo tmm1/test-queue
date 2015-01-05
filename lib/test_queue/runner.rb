@@ -122,7 +122,7 @@ module TestQueue
         puts
         puts "==> Failures"
         puts
-        puts @failures
+        puts @failures.force_encoding("UTF-8")
       end
 
       puts
@@ -288,21 +288,23 @@ module TestQueue
 
     def reap_worker(blocking=true)
       if pid = Process.waitpid(-1, blocking ? 0 : Process::WNOHANG) and worker = @workers.delete(pid)
-        worker.status = $?
-        worker.end_time = Time.now
+        begin
+          worker.status = $?
+          worker.end_time = Time.now
 
-        if File.exists?(file = "/tmp/test_queue_worker_#{pid}_output")
-          worker.output = IO.binread(file)
-          FileUtils.rm(file)
-        end
+          if File.exists?(file = "/tmp/test_queue_worker_#{pid}_output")
+            worker.output = IO.binread(file)
+            FileUtils.rm(file)
+          end
 
-        if File.exists?(file = "/tmp/test_queue_worker_#{pid}_stats")
-          worker.stats = Marshal.load(IO.binread(file))
-          FileUtils.rm(file)
-        end
-
-        relay_to_master(worker) if relay?
-        worker_completed(worker)
+          if File.exists?(file = "/tmp/test_queue_worker_#{pid}_stats")
+            worker.stats = Marshal.load(IO.binread(file))
+            FileUtils.rm(file)
+          end
+        ensure
+          relay_to_master(worker) if relay?
+          worker_completed(worker)
+        end        
       end
     end
 

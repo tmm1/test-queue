@@ -29,6 +29,7 @@ module TestQueue
           item = Marshal.load(data)
           break if item.nil? || item.empty?
           suite = @suites[item]
+          break if suite.nil?
 
           $0 = "#{@procline} - #{suite.respond_to?(:description) ? suite.description : suite}"
           start = Time.now
