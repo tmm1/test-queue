@@ -1,8 +1,49 @@
-require 'socket'
+require 'drb'
 require 'fileutils'
 require 'securerandom'
 
 module TestQueue
+  class Master
+    attr_reader :queue, :completed, :remote_workers
+    def initialize(queue, run_token)
+      @queue ||= queue
+      @run_token ||= run_token
+      @completed ||= []
+      @mutex = Mutex.new
+      @remote_workers = 0
+    end
+
+    def pop
+      @queue.shift.to_s
+    end
+
+    def slave(num, slave, run_token, slave_message)
+      if run_token == @run_token
+        # If we have a slave from a different test run, don't respond, and it will consider the test run done.
+        @remote_workers += num
+        message = "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
+        message << " " + slave_message if slave_message
+        STDERR.puts message
+        true
+      else
+        STDERR.puts "*** Worker from run #{run_token} connected to master for run #{@run_token}; ignoring."
+        false
+      end
+    end
+
+    def worker(remote_worker)
+      worker_completed(remote_worker)
+      @mutex.synchronize do
+        @remote_workers -= 1
+      end
+    end
+
+    def worker_completed(worker)
+      @completed << worker
+      puts worker.output if ENV['TEST_QUEUE_VERBOSE'] || worker.status.exitstatus != 0
+    end
+  end
+
   class Worker
     attr_accessor :pid, :status, :output, :stats, :num, :host
     attr_accessor :start_time, :end_time
@@ -39,7 +80,6 @@ module TestQueue
       @suites = queue.inject(Hash.new){ |hash, suite| hash.update suite.to_s => suite }
 
       @workers = {}
-      @completed = []
 
       @concurrency =
         concurrency ||
@@ -61,7 +101,7 @@ module TestQueue
       @socket =
         socket ||
         ENV['TEST_QUEUE_SOCKET'] ||
-        "/tmp/test_queue_#{$$}_#{object_id}.sock"
+        "drbunix:///tmp/test_queue_#{$$}_#{object_id}.sock"
 
       @relay =
         relay ||
@@ -99,11 +139,11 @@ module TestQueue
 
     def summarize_internal
       puts
-      puts "==> Summary (#{@completed.size} workers in %.4fs)" % (Time.now-@start_time)
+      puts "==> Summary (#{@master.completed.size} workers in %.4fs)" % (Time.now-@start_time)
       puts
 
       @failures = ''
-      @completed.each do |worker|
+      @master.completed.each do |worker|
         summarize_worker(worker)
         @failures << worker.failure_output if worker.failure_output
 
@@ -135,7 +175,7 @@ module TestQueue
 
       summarize
 
-      estatus = @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
+      estatus = @master.completed.inject(0){ |s, worker| s + worker.status.exitstatus }
       estatus = 255 if estatus > 255
       exit!(estatus)
     end
@@ -156,9 +196,9 @@ module TestQueue
       start_master
       prepare(@concurrency)
       @prepared_time = Time.now
-      start_relay if relay?
       spawn_workers
       distribute_queue
+      puts "done distributing"
     ensure
       stop_master
 
@@ -173,14 +213,25 @@ module TestQueue
 
     def start_master
       if !relay?
-        if @socket =~ /^(?:(.+):)?(\d+)$/
-          address = $1 || '0.0.0.0'
-          port = $2.to_i
-          @socket = "#$1:#$2"
-          @server = TCPServer.new(address, port)
-        else
-          FileUtils.rm(@socket) if File.exists?(@socket)
-          @server = UNIXServer.new(@socket)
+        @master = Master.new(@queue, @run_token)
+        DRb.start_service(@socket, @master)  # replace localhost with 0.0.0.0 to allow conns from outside
+      else
+        DRb.start_service
+        @master = DRbObject.new_with_uri(@relay)
+
+        message = " #{@slave_message}"
+        message.gsub!(/(\r|\n)/, "") # Our "protocol" is newline-separated
+        message.strip!
+
+        begin
+          unless @master.slave(@concurrency,Socket.gethostname, @run_token, message)
+            STDERR.puts "*** Wrong run token of #@run_token for #@relay"
+            exit! 1
+          end
+        rescue DRb::DRbConnError => e
+          raise e if Time.now - start > @slave_connection_timeout
+          puts "Master not yet available, sleeping..."
+          sleep 0.5
         end
       end
 
@@ -189,31 +240,10 @@ module TestQueue
       $0 = "#{desc} - #{@procline}"
     end
 
-    def start_relay
-      return unless relay?
-
-      sock = connect_to_relay
-      message = " #{@slave_message}" if @slave_message
-      message.gsub!(/(\r|\n)/, "") # Our "protocol" is newline-separated
-      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{@run_token}#{message}")
-      response = sock.gets.strip
-      unless response == "OK"
-        STDERR.puts "*** Got non-OK response from master: #{response}"
-        sock.close
-        exit! 1
-      end
-      sock.close
-    rescue Errno::ECONNREFUSED
-      STDERR.puts "*** Unable to connect to relay #{@relay}. Aborting.."
-      exit! 1
-    end
-
     def stop_master
       return if relay?
 
-      FileUtils.rm_f(@socket) if @socket && @server.is_a?(UNIXServer)
-      @server.close rescue nil if @server
-      @socket = @server = nil
+      DRb.stop_service
     end
 
     def spawn_workers
@@ -221,12 +251,12 @@ module TestQueue
         num = i+1
 
         pid = fork do
-          @server.close if @server
-
-          iterator = Iterator.new(relay?? @relay : @socket, @suites, method(:around_filter))
+          DRb.start_service
+          master = DRbObject.new_with_uri(@relay || @socket)
+          iterator = Iterator.new(master, @suites, method(:around_filter))
           after_fork_internal(num, iterator)
           ret = run_worker(iterator) || 0
-          cleanup_worker
+          cleanup_worker(ret)
           Kernel.exit! ret
         end
 
@@ -245,7 +275,7 @@ module TestQueue
 
       $0 = "test-queue worker [#{num}]"
       puts
-      puts "==> Starting #$0 (#{Process.pid} on #{Socket.gethostname}) - iterating over #{iterator.sock}"
+      puts "==> Starting #$0 (#{Process.pid} on #{Socket.gethostname}) - iterating over #{@relay || @socket}"
       puts
 
       after_fork(num)
@@ -278,7 +308,7 @@ module TestQueue
       return 0 # exit status
     end
 
-    def cleanup_worker
+    def cleanup_worker(ret)
     end
 
     def summarize_worker(worker)
@@ -302,56 +332,15 @@ module TestQueue
         end
 
         relay_to_master(worker) if relay?
-        worker_completed(worker)
+        @master.worker_completed(worker)
       end
-    end
-
-    def worker_completed(worker)
-      @completed << worker
-      puts worker.output if ENV['TEST_QUEUE_VERBOSE'] || worker.status.exitstatus != 0
     end
 
     def distribute_queue
       return if relay?
-      remote_workers = 0
 
-      until @queue.empty? && remote_workers == 0
-        if IO.select([@server], nil, nil, 0.1).nil?
-          reap_worker(false) if @workers.any? # check for worker deaths
-        else
-          sock = @server.accept
-          cmd = sock.gets.strip
-          case cmd
-          when /^POP/
-            # If we have a slave from a different test run, don't respond, and it will consider the test run done.
-            if obj = @queue.shift
-              data = Marshal.dump(obj.to_s)
-              sock.write(data)
-            end
-          when /^SLAVE (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
-            num = $1.to_i
-            slave = $2
-            run_token = $3
-            slave_message = $4
-            if run_token == @run_token
-              # If we have a slave from a different test run, don't respond, and it will consider the test run done.
-              sock.write("OK\n")
-              remote_workers += num
-            else
-              STDERR.puts "*** Worker from run #{run_token} connected to master for run #{@run_token}; ignoring."
-              sock.write("WRONG RUN\n")
-            end
-            message = "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
-            message << " " + slave_message if slave_message
-            STDERR.puts message
-          when /^WORKER (\d+)/
-            data = sock.read($1.to_i)
-            worker = Marshal.load(data)
-            worker_completed(worker)
-            remote_workers -= 1
-          end
-          sock.close
-        end
+      until @master.queue.empty? && @master.remote_workers == 0
+        reap_worker(false) if @workers.any? # check for worker deaths
       end
     ensure
       stop_master
@@ -365,31 +354,9 @@ module TestQueue
       !!@relay
     end
 
-    def connect_to_relay
-      sock = nil
-      start = Time.now
-      puts "Attempting to connect for #{@slave_connection_timeout}s..."
-      while sock.nil?
-        begin
-          sock = TCPSocket.new(*@relay.split(':'))
-        rescue Errno::ECONNREFUSED => e
-          raise e if Time.now - start > @slave_connection_timeout
-          puts "Master not yet available, sleeping..."
-          sleep 0.5
-        end
-      end
-      sock
-    end
-
     def relay_to_master(worker)
       worker.host = Socket.gethostname
-      data = Marshal.dump(worker)
-
-      sock = connect_to_relay
-      sock.puts("WORKER #{data.bytesize}")
-      sock.write(data)
-    ensure
-      sock.close if sock
+      @master.worker(worker)
     end
   end
 end
