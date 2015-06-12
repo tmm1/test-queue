@@ -193,9 +193,7 @@ module TestQueue
       return unless relay?
 
       sock = connect_to_relay
-      message = " #{@slave_message}" if @slave_message
-      message.gsub!(/(\r|\n)/, "") # Our "protocol" is newline-separated
-      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{@run_token}#{message}")
+      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{@run_token}#{slave_message}")
       response = sock.gets.strip
       unless response == "OK"
         STDERR.puts "*** Got non-OK response from master: #{response}"
@@ -206,6 +204,11 @@ module TestQueue
     rescue Errno::ECONNREFUSED
       STDERR.puts "*** Unable to connect to relay #{@relay}. Aborting.."
       exit! 1
+    end
+
+    def slave_message
+      message = @slave_message ? " #{@slave_message}" : ""
+      message.gsub(/(\r|\n)/, "") # Our "protocol" is newline-separated
     end
 
     def stop_master
