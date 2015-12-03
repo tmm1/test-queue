@@ -127,17 +127,20 @@ module TestQueue
 
       puts
 
-      if @stats
-        File.open(stats_file, 'wb') do |f|
-          f.write Marshal.dump(stats)
-        end
-      end
-
+      save_stats
       summarize
 
       estatus = @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
       estatus = 255 if estatus > 255
       exit!(estatus)
+    end
+
+    def save_stats
+      if @stats
+        File.open(stats_file, 'wb') do |f|
+          f.write Marshal.dump(stats)
+        end
+      end
     end
 
     def summarize
@@ -315,11 +318,15 @@ module TestQueue
       puts worker.output if ENV['TEST_QUEUE_VERBOSE'] || worker.status.exitstatus != 0
     end
 
+    def queue_empty?
+      @queue.empty?
+    end
+
     def distribute_queue
       return if relay?
       @remote_workers = 0
 
-      until @queue.empty? && @remote_workers == 0
+      until queue_empty? && @remote_workers == 0
         if IO.select([@server], nil, nil, 0.1).nil?
           reap_worker(false) if @workers.any? # check for worker deaths
         else

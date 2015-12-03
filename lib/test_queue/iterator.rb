@@ -24,16 +24,17 @@ module TestQueue
       if data = client.read(65536)
         client.close
         item = Marshal.load(data)
-        return if item.nil? || item.empty?
+        return if item.nil? || item == ""
         item
       end
+    rescue Errno::ENOENT, Errno::ECONNRESET, Errno::ECONNREFUSED
     end
 
     def each
       fail "already used this iterator. previous caller: #@done" if @done
 
       while true
-        if item = query('POP')
+        if item = query("POP\n")
           suite = @suites[item]
 
           $0 = "#{@procline} - #{suite.respond_to?(:description) ? suite.description : suite}"
@@ -48,7 +49,6 @@ module TestQueue
           break
         end
       end
-    rescue Errno::ENOENT, Errno::ECONNRESET, Errno::ECONNREFUSED
     ensure
       @done = caller.first
       File.open("/tmp/test_queue_worker_#{$$}_stats", "wb") do |f|
@@ -63,7 +63,7 @@ module TestQueue
         else
           UNIXSocket.new(@sock)
         end
-      sock.puts(cmd)
+      sock.write(cmd)
       sock
     rescue Errno::EPIPE
       nil
