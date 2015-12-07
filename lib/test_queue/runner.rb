@@ -127,17 +127,20 @@ module TestQueue
 
       puts
 
-      if @stats
-        File.open(stats_file, 'wb') do |f|
-          f.write Marshal.dump(stats)
-        end
-      end
-
+      save_stats
       summarize
 
       estatus = @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
       estatus = 255 if estatus > 255
       exit!(estatus)
+    end
+
+    def save_stats
+      if @stats
+        File.open(stats_file, 'wb') do |f|
+          f.write Marshal.dump(stats)
+        end
+      end
     end
 
     def summarize
@@ -223,7 +226,7 @@ module TestQueue
         pid = fork do
           @server.close if @server
 
-          iterator = Iterator.new(relay?? @relay : @socket, @suites, method(:around_filter))
+          iterator = iterator_factory(relay?? @relay : @socket, @suites, method(:around_filter))
           after_fork_internal(num, iterator)
           ret = run_worker(iterator) || 0
           cleanup_worker
@@ -232,6 +235,10 @@ module TestQueue
 
         @workers[pid] = Worker.new(pid, num)
       end
+    end
+
+    def iterator_factory(*args)
+      Iterator.new(*args)
     end
 
     def after_fork_internal(num, iterator)
@@ -311,45 +318,21 @@ module TestQueue
       puts worker.output if ENV['TEST_QUEUE_VERBOSE'] || worker.status.exitstatus != 0
     end
 
+    def queue_empty?
+      @queue.empty?
+    end
+
     def distribute_queue
       return if relay?
-      remote_workers = 0
+      @remote_workers = 0
 
-      until @queue.empty? && remote_workers == 0
+      until queue_empty? && @remote_workers == 0
         if IO.select([@server], nil, nil, 0.1).nil?
           reap_worker(false) if @workers.any? # check for worker deaths
         else
           sock = @server.accept
           cmd = sock.gets.strip
-          case cmd
-          when /^POP/
-            # If we have a slave from a different test run, don't respond, and it will consider the test run done.
-            if obj = @queue.shift
-              data = Marshal.dump(obj.to_s)
-              sock.write(data)
-            end
-          when /^SLAVE (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
-            num = $1.to_i
-            slave = $2
-            run_token = $3
-            slave_message = $4
-            if run_token == @run_token
-              # If we have a slave from a different test run, don't respond, and it will consider the test run done.
-              sock.write("OK\n")
-              remote_workers += num
-            else
-              STDERR.puts "*** Worker from run #{run_token} connected to master for run #{@run_token}; ignoring."
-              sock.write("WRONG RUN\n")
-            end
-            message = "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
-            message << " " + slave_message if slave_message
-            STDERR.puts message
-          when /^WORKER (\d+)/
-            data = sock.read($1.to_i)
-            worker = Marshal.load(data)
-            worker_completed(worker)
-            remote_workers -= 1
-          end
+          handle_command(cmd, sock)
           sock.close
         end
       end
@@ -358,6 +341,38 @@ module TestQueue
 
       until @workers.empty?
         reap_worker
+      end
+    end
+
+    def handle_command(cmd, sock)
+      case cmd
+      when /^POP/
+        # If we have a slave from a different test run, don't respond, and it will consider the test run done.
+        if obj = @queue.shift
+          data = Marshal.dump(obj.to_s)
+          sock.write(data)
+        end
+      when /^SLAVE (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
+        num = $1.to_i
+        slave = $2
+        run_token = $3
+        slave_message = $4
+        if run_token == @run_token
+          # If we have a slave from a different test run, don't respond, and it will consider the test run done.
+          sock.write("OK\n")
+          @remote_workers += num
+        else
+          STDERR.puts "*** Worker from run #{run_token} connected to master for run #{@run_token}; ignoring."
+          sock.write("WRONG RUN\n")
+        end
+        message = "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
+        message << " " + slave_message if slave_message
+        STDERR.puts message
+      when /^WORKER (\d+)/
+        data = sock.read($1.to_i)
+        worker = Marshal.load(data)
+        worker_completed(worker)
+        @remote_workers -= 1
       end
     end
 

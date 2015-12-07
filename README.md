@@ -35,6 +35,7 @@ the workload and relay results back to a central master.
 - `TEST_QUEUE_RELAY_TIMEOUT`: when using remote workers, the amount of time a worker will try to reconnect to start work
 - `TEST_QUEUE_RELAY_TOKEN`: when using remote workers, this must be the same on both workers and the server for remote workers to run tests.
 - `TEST_QUEUE_SLAVE_MESSAGE`: when using remote workers, set this on a slave worker and it will appear on the slave's connection message on the master.
+- `TEST_QUEUE_SPLIT_GROUPS`: divide and conquer the last example group(s) so that all workers finish around the same time. Ideal for massive spec files, and performs well even with slow/expensive context-level hooks. Add the `:no_split` tag to groups you don't want split. RSpec only.
 
 ### usage
 
