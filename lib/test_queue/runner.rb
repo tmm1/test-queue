@@ -98,9 +98,12 @@ module TestQueue
         execute_sequential
     ensure
       summarize_internal unless $!
+      exit(-1) if @aborting
     end
 
     def summarize_internal
+      return if @aborting
+
       puts
       puts "==> Summary (#{@completed.size} workers in %.4fs)" % (Time.now-@start_time)
       puts
@@ -165,9 +168,7 @@ module TestQueue
     ensure
       stop_master
 
-      @workers.each do |pid, worker|
-        Process.kill 'KILL', pid
-      end
+      kill_workers
 
       until @workers.empty?
         reap_worker
@@ -289,6 +290,12 @@ module TestQueue
       worker.failure_output = ''
     end
 
+    def kill_workers
+      @workers.each do |pid, worker|
+        Process.kill 'KILL', pid
+      end
+    end
+
     def reap_worker(blocking=true)
       if pid = Process.waitpid(-1, blocking ? 0 : Process::WNOHANG) and worker = @workers.delete(pid)
         worker.status = $?
@@ -311,6 +318,7 @@ module TestQueue
 
     def worker_completed(worker)
       @completed << worker
+      return if @aborting
       puts worker.output if ENV['TEST_QUEUE_VERBOSE'] || worker.status.exitstatus != 0
     end
 
@@ -322,7 +330,9 @@ module TestQueue
         if @queue.any? &&
           @remote_worker_quorum && remote_workers < @remote_worker_quorum &&
           @remote_worker_quorum_timeout && @remote_worker_quorum_timeout <= Time.now - @start_time
+          @aborting = true
           STDERR.puts "After #{@remote_worker_quorum_timeout}s #{remote_workers} remote workers are connected, which is less than the #{@remote_worker_quorum} required for a quorum. Aborting."
+          kill_workers
           break
         end
 
