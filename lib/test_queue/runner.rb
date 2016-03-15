@@ -75,6 +75,9 @@ module TestQueue
       elsif @relay
         @queue = []
       end
+
+      @remote_worker_quorum = ENV['TEST_QUEUE_REMOTE_WORKER_QUORUM'] && ENV['TEST_QUEUE_REMOTE_WORKER_QUORUM'].to_i
+      @remote_worker_quorum_timeout = ENV['TEST_QUEUE_REMOTE_WORKER_QUORUM_TIMEOUT'] && ENV['TEST_QUEUE_REMOTE_WORKER_QUORUM_TIMEOUT'].to_i
     end
 
     def stats
@@ -313,9 +316,18 @@ module TestQueue
 
     def distribute_queue
       return if relay?
+      quorum_members = 0
       remote_workers = 0
 
       until @queue.empty? && remote_workers == 0
+        if @remote_worker_quorum &&
+          quorum_members < @remote_worker_quorum &&
+          @remote_worker_quorum_timeout &&
+          @remote_worker_quorum_timeout <= Time.now - @start_time
+          STDERR.puts "After #{@remote_worker_quorum_timeout}s #{quorum_members} remote workers had connected, which is less than the #{@remote_worker_quorum} required for a quorum. Aborting."
+          break
+        end
+
         if IO.select([@server], nil, nil, 0.1).nil?
           reap_worker(false) if @workers.any? # check for worker deaths
         else
@@ -337,6 +349,7 @@ module TestQueue
               # If we have a slave from a different test run, don't respond, and it will consider the test run done.
               sock.write("OK\n")
               remote_workers += num
+              quorum_members += num
             else
               STDERR.puts "*** Worker from run #{run_token} connected to master for run #{@run_token}; ignoring."
               sock.write("WRONG RUN\n")
