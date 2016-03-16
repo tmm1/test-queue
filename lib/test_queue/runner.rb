@@ -311,6 +311,8 @@ module TestQueue
       remote_workers = 0
 
       until @queue.empty? && remote_workers == 0
+        queue_status(@start_time, @queue.size, @workers.size, remote_workers)
+
         if IO.select([@server], nil, nil, 0.1).nil?
           reap_worker(false) if @workers.any? # check for worker deaths
         else
@@ -406,6 +408,26 @@ module TestQueue
       @aborting = true
       kill_workers
       Kernel::abort("Aborting: #{message}")
+    end
+
+    # Subclasses can override to monitor the status of the queue.
+    #
+    # For example, you may want to record metrics about how quickly remote
+    # workers connect, or abort the build if not enough connect.
+    #
+    # This method is called very frequently during the test run, so don't do
+    # anything expensive/blocking.
+    #
+    # This method is not called on remote masters when using remote workers,
+    # only on the central master.
+    #
+    # start_time          - Time when the test run began
+    # queue_size          - Integer number of suites left in the queue
+    # local_worker_count  - Integer number of active local workers
+    # remote_worker_count - Integer number of active remote workers
+    #
+    # Returns nothing.
+    def queue_status(start_time, queue_size, local_worker_count, remote_worker_count)
     end
   end
 end
