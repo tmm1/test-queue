@@ -162,13 +162,7 @@ module TestQueue
     ensure
       stop_master
 
-      @workers.each do |pid, worker|
-        Process.kill 'KILL', pid
-      end
-
-      until @workers.empty?
-        reap_worker
-      end
+      kill_workers
     end
 
     def start_master
@@ -307,6 +301,7 @@ module TestQueue
     end
 
     def worker_completed(worker)
+      return if @aborting
       @completed << worker
       puts worker.output if ENV['TEST_QUEUE_VERBOSE'] || worker.status.exitstatus != 0
     end
@@ -390,6 +385,27 @@ module TestQueue
       sock.write(data)
     ensure
       sock.close if sock
+    end
+
+    def kill_workers
+      @workers.each do |pid, worker|
+        Process.kill 'KILL', pid
+      end
+
+      until @workers.empty?
+        reap_worker
+      end
+    end
+
+    # Stop the test run immediately.
+    #
+    # message - String message to print to the console when exiting.
+    #
+    # Doesn't return.
+    def abort(message)
+      @aborting = true
+      kill_workers
+      Kernel::abort("Aborting: #{message}")
     end
   end
 end
