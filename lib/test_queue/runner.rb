@@ -23,6 +23,7 @@ module TestQueue
 
   class Runner
     attr_accessor :concurrency
+    attr_reader :remote_worker_quorum, :remote_worker_quorum_timeout
 
     def initialize(queue, concurrency=nil, socket=nil, relay=nil)
       raise ArgumentError, 'array required' unless Array === queue
@@ -324,9 +325,7 @@ module TestQueue
       remote_workers = 0
 
       until @queue.empty? && remote_workers == 0
-        if quorum_failed?(remote_workers)
-          abort("After #{@remote_worker_quorum_timeout}s #{remote_workers} remote workers are connected, which is less than the #{@remote_worker_quorum} required for a quorum.")
-        end
+        check_quorum(remote_workers)
 
         if IO.select([@server], nil, nil, 0.1).nil?
           reap_worker(false) if @workers.any? # check for worker deaths
@@ -373,20 +372,40 @@ module TestQueue
       end
     end
 
+    def check_quorum(remote_workers)
+      return unless quorum_failed?(remote_workers)
+      quorum_failed(remote_workers)
+    end
+
     def quorum_failed?(remote_workers)
-      return false unless @remote_worker_quorum && @remote_worker_quorum_timeout
+      return false unless remote_worker_quorum && remote_worker_quorum_timeout
 
       # If we've emptied the queue there are no more tests to run, so it
       # doesn't really matter if we've reached a quorum or not.
       return false unless @queue.any?
 
       # If we have enough workers then we've clearly reached a quorum.
-      return false if remote_workers >= @remote_worker_quorum
+      return false if remote_workers >= remote_worker_quorum
 
       # The quorum hasn't failed until the timeout is reached.
-      @remote_worker_quorum_timeout <= Time.now - @start_time
+      remote_worker_quorum_timeout <= Time.now - @start_time
     end
 
+    # Handle a quorum failure.
+    #
+    # remote_workers - The number of workers that are currently connected.
+    #
+    # The default implementation prints a message and aborts the test run.
+    # Subclasses may override to provide their own behavior.
+    def quorum_failed(remote_workers)
+      abort("After #{remote_worker_quorum_timeout}s #{remote_workers} remote workers are connected, which is less than the #{remote_worker_quorum} required for a quorum.")
+    end
+
+    # Stop the test run immediately.
+    #
+    # message - String message to print to the console when exiting.
+    #
+    # Doesn't return.
     def abort(message)
       @aborting = true
       kill_workers
