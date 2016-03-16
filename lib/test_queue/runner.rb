@@ -167,10 +167,6 @@ module TestQueue
       stop_master
 
       kill_workers
-
-      until @workers.empty?
-        reap_worker
-      end
     end
 
     def start_master
@@ -292,6 +288,10 @@ module TestQueue
       @workers.each do |pid, worker|
         Process.kill 'KILL', pid
       end
+
+      until @workers.empty?
+        reap_worker
+      end
     end
 
     def reap_worker(blocking=true)
@@ -409,9 +409,6 @@ module TestQueue
     def abort(message)
       @aborting = true
       kill_workers
-      until @workers.empty?
-        reap_worker
-      end
       Kernel::abort("Aborting: #{message}")
     end
 
