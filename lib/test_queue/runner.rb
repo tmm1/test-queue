@@ -373,7 +373,12 @@ module TestQueue
     end
 
     def check_quorum(remote_workers)
+      # If a subclass decides to allow the build to proceed without a quorum we
+      # should only call #quorum_failed once.
+      return if @quorum_failed
+
       return unless quorum_failed?(remote_workers)
+      @qourum_failed = true
       quorum_failed(remote_workers)
     end
 
