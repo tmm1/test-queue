@@ -98,12 +98,9 @@ module TestQueue
         execute_sequential
     ensure
       summarize_internal unless $!
-      exit(-1) if @aborting
     end
 
     def summarize_internal
-      return if @aborting
-
       puts
       puts "==> Summary (#{@completed.size} workers in %.4fs)" % (Time.now-@start_time)
       puts
@@ -317,8 +314,8 @@ module TestQueue
     end
 
     def worker_completed(worker)
-      @completed << worker
       return if @aborting
+      @completed << worker
       puts worker.output if ENV['TEST_QUEUE_VERBOSE'] || worker.status.exitstatus != 0
     end
 
@@ -328,10 +325,7 @@ module TestQueue
 
       until @queue.empty? && remote_workers == 0
         if quorum_failed?(remote_workers)
-          @aborting = true
-          STDERR.puts "After #{@remote_worker_quorum_timeout}s #{remote_workers} remote workers are connected, which is less than the #{@remote_worker_quorum} required for a quorum. Aborting."
-          kill_workers
-          break
+          abort("After #{@remote_worker_quorum_timeout}s #{remote_workers} remote workers are connected, which is less than the #{@remote_worker_quorum} required for a quorum.")
         end
 
         if IO.select([@server], nil, nil, 0.1).nil?
@@ -391,6 +385,15 @@ module TestQueue
 
       # The quorum hasn't failed until the timeout is reached.
       @remote_worker_quorum_timeout <= Time.now - @start_time
+    end
+
+    def abort(message)
+      @aborting = true
+      kill_workers
+      until @workers.empty?
+        reap_worker
+      end
+      Kernel::abort("Aborting: #{message}")
     end
 
     def relay?
