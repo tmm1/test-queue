@@ -327,9 +327,7 @@ module TestQueue
       remote_workers = 0
 
       until @queue.empty? && remote_workers == 0
-        if @queue.any? &&
-          @remote_worker_quorum && remote_workers < @remote_worker_quorum &&
-          @remote_worker_quorum_timeout && @remote_worker_quorum_timeout <= Time.now - @start_time
+        if quorum_failed?(remote_workers)
           @aborting = true
           STDERR.puts "After #{@remote_worker_quorum_timeout}s #{remote_workers} remote workers are connected, which is less than the #{@remote_worker_quorum} required for a quorum. Aborting."
           kill_workers
@@ -379,6 +377,20 @@ module TestQueue
       until @workers.empty?
         reap_worker
       end
+    end
+
+    def quorum_failed?(remote_workers)
+      return false unless @remote_worker_quorum && @remote_worker_quorum_timeout
+
+      # If we've emptied the queue there are no more tests to run, so it
+      # doesn't really matter if we've reached a quorum or not.
+      return false unless @queue.any?
+
+      # If we have enough workers then we've clearly reached a quorum.
+      return false if remote_workers >= @remote_worker_quorum
+
+      # The quorum hasn't failed until the timeout is reached.
+      @remote_worker_quorum_timeout <= Time.now - @start_time
     end
 
     def relay?
