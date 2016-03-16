@@ -35,6 +35,8 @@ the workload and relay results back to a central master.
 - `TEST_QUEUE_RELAY_TIMEOUT`: when using remote workers, the amount of time a worker will try to reconnect to start work
 - `TEST_QUEUE_RELAY_TOKEN`: when using remote workers, this must be the same on both workers and the server for remote workers to run tests.
 - `TEST_QUEUE_SLAVE_MESSAGE`: when using remote workers, set this on a slave worker and it will appear on the slave's connection message on the master.
+- `TEST_QUEUE_REMOTE_WORKER_QUORUM`: when using remote workers, this specifies how many remote workers constitute a quorum.
+- `TEST_QUEUE_REMOTE_WORKER_QUORUM_TIMEOUT`: when using remote workers, if a quorum is not reached after this number of seconds, the build is aborted.
 
 ### usage
 

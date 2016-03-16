@@ -23,6 +23,7 @@ module TestQueue
 
   class Runner
     attr_accessor :concurrency
+    attr_reader :remote_worker_quorum, :remote_worker_quorum_timeout
 
     def initialize(queue, concurrency=nil, socket=nil, relay=nil)
       raise ArgumentError, 'array required' unless Array === queue
@@ -75,6 +76,9 @@ module TestQueue
       elsif @relay
         @queue = []
       end
+
+      @remote_worker_quorum = ENV['TEST_QUEUE_REMOTE_WORKER_QUORUM'] && ENV['TEST_QUEUE_REMOTE_WORKER_QUORUM'].to_i
+      @remote_worker_quorum_timeout = ENV['TEST_QUEUE_REMOTE_WORKER_QUORUM_TIMEOUT'] && ENV['TEST_QUEUE_REMOTE_WORKER_QUORUM_TIMEOUT'].to_i
     end
 
     def stats
@@ -162,13 +166,7 @@ module TestQueue
     ensure
       stop_master
 
-      @workers.each do |pid, worker|
-        Process.kill 'KILL', pid
-      end
-
-      until @workers.empty?
-        reap_worker
-      end
+      kill_workers
     end
 
     def start_master
@@ -286,6 +284,16 @@ module TestQueue
       worker.failure_output = ''
     end
 
+    def kill_workers
+      @workers.each do |pid, worker|
+        Process.kill 'KILL', pid
+      end
+
+      until @workers.empty?
+        reap_worker
+      end
+    end
+
     def reap_worker(blocking=true)
       if pid = Process.waitpid(-1, blocking ? 0 : Process::WNOHANG) and worker = @workers.delete(pid)
         worker.status = $?
@@ -307,6 +315,7 @@ module TestQueue
     end
 
     def worker_completed(worker)
+      return if @aborting
       @completed << worker
       puts worker.output if ENV['TEST_QUEUE_VERBOSE'] || worker.status.exitstatus != 0
     end
@@ -316,6 +325,8 @@ module TestQueue
       remote_workers = 0
 
       until @queue.empty? && remote_workers == 0
+        check_quorum(remote_workers)
+
         if IO.select([@server], nil, nil, 0.1).nil?
           reap_worker(false) if @workers.any? # check for worker deaths
         else
@@ -359,6 +370,51 @@ module TestQueue
       until @workers.empty?
         reap_worker
       end
+    end
+
+    def check_quorum(remote_workers)
+      # If a subclass decides to allow the build to proceed without a quorum we
+      # should only call #quorum_failed once.
+      return if @quorum_failed
+
+      return unless quorum_failed?(remote_workers)
+      @qourum_failed = true
+      quorum_failed(remote_workers)
+    end
+
+    def quorum_failed?(remote_workers)
+      return false unless remote_worker_quorum && remote_worker_quorum_timeout
+
+      # If we've emptied the queue there are no more tests to run, so it
+      # doesn't really matter if we've reached a quorum or not.
+      return false unless @queue.any?
+
+      # If we have enough workers then we've clearly reached a quorum.
+      return false if remote_workers >= remote_worker_quorum
+
+      # The quorum hasn't failed until the timeout is reached.
+      remote_worker_quorum_timeout <= Time.now - @start_time
+    end
+
+    # Handle a quorum failure.
+    #
+    # remote_workers - The number of workers that are currently connected.
+    #
+    # The default implementation prints a message and aborts the test run.
+    # Subclasses may override to provide their own behavior.
+    def quorum_failed(remote_workers)
+      abort("After #{remote_worker_quorum_timeout}s #{remote_workers} remote workers are connected, which is less than the #{remote_worker_quorum} required for a quorum.")
+    end
+
+    # Stop the test run immediately.
+    #
+    # message - String message to print to the console when exiting.
+    #
+    # Doesn't return.
+    def abort(message)
+      @aborting = true
+      kill_workers
+      Kernel::abort("Aborting: #{message}")
     end
 
     def relay?
