@@ -162,13 +162,7 @@ module TestQueue
     ensure
       stop_master
 
-      @workers.each do |pid, worker|
-        Process.kill 'KILL', pid
-      end
-
-      until @workers.empty?
-        reap_worker
-      end
+      kill_workers
     end
 
     def start_master
@@ -307,6 +301,7 @@ module TestQueue
     end
 
     def worker_completed(worker)
+      return if @aborting
       @completed << worker
       puts worker.output if ENV['TEST_QUEUE_VERBOSE'] || worker.status.exitstatus != 0
     end
@@ -316,6 +311,8 @@ module TestQueue
       remote_workers = 0
 
       until @queue.empty? && remote_workers == 0
+        queue_status(@start_time, @queue.size, @workers.size, remote_workers)
+
         if IO.select([@server], nil, nil, 0.1).nil?
           reap_worker(false) if @workers.any? # check for worker deaths
         else
@@ -390,6 +387,47 @@ module TestQueue
       sock.write(data)
     ensure
       sock.close if sock
+    end
+
+    def kill_workers
+      @workers.each do |pid, worker|
+        Process.kill 'KILL', pid
+      end
+
+      until @workers.empty?
+        reap_worker
+      end
+    end
+
+    # Stop the test run immediately.
+    #
+    # message - String message to print to the console when exiting.
+    #
+    # Doesn't return.
+    def abort(message)
+      @aborting = true
+      kill_workers
+      Kernel::abort("Aborting: #{message}")
+    end
+
+    # Subclasses can override to monitor the status of the queue.
+    #
+    # For example, you may want to record metrics about how quickly remote
+    # workers connect, or abort the build if not enough connect.
+    #
+    # This method is called very frequently during the test run, so don't do
+    # anything expensive/blocking.
+    #
+    # This method is not called on remote masters when using remote workers,
+    # only on the central master.
+    #
+    # start_time          - Time when the test run began
+    # queue_size          - Integer number of suites left in the queue
+    # local_worker_count  - Integer number of active local workers
+    # remote_worker_count - Integer number of active remote workers
+    #
+    # Returns nothing.
+    def queue_status(start_time, queue_size, local_worker_count, remote_worker_count)
     end
   end
 end
