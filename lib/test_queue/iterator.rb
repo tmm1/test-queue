@@ -21,7 +21,7 @@ module TestQueue
       while true
         client = connect_to_master('POP')
         break if client.nil?
-        r, w, e = IO.select([client], nil, [client], nil)
+        _r, _w, e = IO.select([client], nil, [client], nil)
         break if !e.empty?
 
         if data = client.read(65536)
