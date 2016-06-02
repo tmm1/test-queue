@@ -360,6 +360,10 @@ module TestQueue
             worker = Marshal.load(data)
             worker_completed(worker)
             remote_workers -= 1
+          when /^KABOOM/
+            # worker reporting an abnormal number of test failures;
+            # stop everything immediately and report the results.
+            break
           end
           sock.close
         end
