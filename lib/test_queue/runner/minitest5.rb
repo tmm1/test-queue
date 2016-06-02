@@ -9,6 +9,12 @@ module MiniTest
     suites.map { |suite| suite.run reporter, options }
   end
 
+  class Runnable
+    def failure_count
+      failures.length
+    end
+  end
+
   class Test
     def self.runnables= runnables
       @@runnables = runnables
