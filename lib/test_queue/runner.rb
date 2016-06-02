@@ -22,7 +22,7 @@ module TestQueue
   end
 
   class Runner
-    attr_accessor :concurrency
+    attr_accessor :concurrency, :exit_when_done
 
     def initialize(queue, concurrency=nil, socket=nil, relay=nil)
       raise ArgumentError, 'array required' unless Array === queue
@@ -75,6 +75,8 @@ module TestQueue
       elsif @relay
         @queue = []
       end
+
+      @exit_when_done = true
     end
 
     def stats
@@ -86,6 +88,11 @@ module TestQueue
         end
     end
 
+    # Run the tests.
+    #
+    # If exit_when_done is true, exit! will be called before this method
+    # completes. If exit_when_done is false, this method will return an Integer
+    # number of failures.
     def execute
       $stdout.sync = $stderr.sync = true
       @start_time = Time.now
@@ -93,8 +100,13 @@ module TestQueue
       @concurrency > 0 ?
         execute_parallel :
         execute_sequential
-    ensure
-      summarize_internal unless $!
+
+      exitstatus = summarize_internal
+      if exit_when_done
+        exit! exitstatus
+      else
+        exitstatus
+      end
     end
 
     def summarize_internal
@@ -137,7 +149,7 @@ module TestQueue
 
       estatus = @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
       estatus = 255 if estatus > 255
-      exit!(estatus)
+      estatus
     end
 
     def summarize
@@ -149,7 +161,7 @@ module TestQueue
     end
 
     def execute_sequential
-      exit! run_worker(@queue)
+      run_worker(@queue)
     end
 
     def execute_parallel
@@ -262,8 +274,7 @@ module TestQueue
     # Entry point for internal runner implementations. The iterator will yield
     # jobs from the shared queue on the master.
     #
-    # Returns nothing. exits 0 on success.
-    # exits N on error, where N is the number of failures.
+    # Returns an Integer number of failures.
     def run_worker(iterator)
       iterator.each do |item|
         puts "  #{item.inspect}"
