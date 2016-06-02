@@ -26,6 +26,10 @@ class Test::Unit::TestSuite
     yield(FINISHED, name)
     yield(FINISHED_OBJECT, self)
   end
+
+  def failure_count
+    (@iterator || @tests).map {|t| t.instance_variable_get(:@_result).failure_count}.inject(0, :+)
+  end
 end
 
 module TestQueue
