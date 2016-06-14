@@ -37,7 +37,8 @@ module TestQueue
           else
             yield suite
           end
-          @stats[suite.to_s] = Time.now - start
+          key = suite.respond_to?(:id) ? suite.id : suite.to_s
+          @stats[key] = Time.now - start
         else
           break
         end

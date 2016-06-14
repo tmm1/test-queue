@@ -35,8 +35,11 @@ module TestQueue
       end
 
       @procline = $0
-      @queue = queue
-      @suites = queue.inject(Hash.new){ |hash, suite| hash.update suite.to_s => suite }
+      @suites = queue.inject(Hash.new) do |hash, suite|
+        key = suite.respond_to?(:id) ? suite.id : suite.to_s
+        hash.update key => suite
+      end
+      @queue = @suites.keys
 
       @workers = {}
       @completed = []
