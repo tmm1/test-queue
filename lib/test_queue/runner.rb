@@ -384,20 +384,23 @@ module TestQueue
         worker.status = $?
         worker.end_time = Time.now
 
-        if File.exists?(file = "/tmp/test_queue_worker_#{worker.pid}_output")
-          worker.output = IO.binread(file)
-          FileUtils.rm(file)
-        end
-
-        if File.exists?(file = "/tmp/test_queue_worker_#{worker.pid}_suites")
-          worker.suites.replace(Marshal.load(IO.binread(file)))
-          FileUtils.rm(file)
-        end
-
+        collect_worker_data(worker)
         relay_to_master(worker) if relay?
         worker_completed(worker)
 
         true
+      end
+    end
+
+    def collect_worker_data(worker)
+      if File.exists?(file = "/tmp/test_queue_worker_#{worker.pid}_output")
+        worker.output = IO.binread(file)
+        FileUtils.rm(file)
+      end
+
+      if File.exists?(file = "/tmp/test_queue_worker_#{worker.pid}_suites")
+        worker.suites.replace(Marshal.load(IO.binread(file)))
+        FileUtils.rm(file)
       end
     end
 
