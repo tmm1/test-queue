@@ -55,20 +55,24 @@ module TestQueue
   class Runner
     class MiniTest < Runner
       def initialize
-        queue = ::MiniTest::Test.runnables.reject { |runnable|
+        runnables = ::MiniTest::Test.runnables.reject do |runnable|
           runnable.runnable_methods.empty?
-        }.sort_by { |runnable|
-          -(stats[runnable.to_s] || 0)
-        }.partition { |runnable|
-          runnable.test_order == :parallel
-        }.reverse.flatten
+        end
 
-        if self.class.split_groups?
-          queue = queue.map do |runnable|
+        queue = if self.class.split_groups?
+          runnables.map do |runnable|
             runnable.runnable_methods.map do |test|
-              { suite: runnable, test: test }
+              {suite: runnable, test: test}
             end
-          end.flatten.shuffle
+          end.flatten.sort_by do |test_hash|
+            -(stats[test_hash.to_s] || 0)
+          end
+        else
+          runnables.sort_by do |runnable|
+            -(stats[runnable.to_s] || 0)
+          end.partition do |runnable|
+            runnable.test_order == :parallel
+          end.reverse.flatten
         end
 
         super(queue)
