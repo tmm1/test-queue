@@ -2,7 +2,7 @@ module TestQueue
   class Iterator
     attr_reader :stats, :sock
 
-    def initialize(sock, suites, filter=nil)
+    def initialize(sock, suites, filter=nil, early_failure_limit: nil)
       @done = false
       @stats = {}
       @procline = $0
@@ -14,6 +14,7 @@ module TestQueue
         @tcp_port = $2.to_i
       end
       @failures = 0
+      @early_failure_limit = early_failure_limit
     end
 
     def each
@@ -23,7 +24,7 @@ module TestQueue
         # If we've hit too many failures in one worker, assume the entire
         # test suite is broken, and notify master so the run
         # can be immediately halted.
-        if ENV["TEST_QUEUE_EARLY_FAILURE_LIMIT"] && @failures >= ENV["TEST_QUEUE_EARLY_FAILURE_LIMIT"].to_i
+        if @early_failure_limit && @failures >= @early_failure_limit
           connect_to_master("KABOOM")
           break
         else
