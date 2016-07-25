@@ -34,6 +34,14 @@ module TestQueue
         queue.sort_by!{ |s| forced.index(s.to_s) }
       end
 
+      if ENV['TEST_QUEUE_EARLY_FAILURE_LIMIT']
+        begin
+          @early_failure_limit = Integer(ENV['TEST_QUEUE_EARLY_FAILURE_LIMIT'])
+        rescue ArgumentError
+          raise ArgumentError, 'TEST_QUEUE_EARLY_FAILURE_LIMIT could not be parsed as an integer'
+        end
+      end
+
       @procline = $0
       @suites = queue.inject(Hash.new) do |hash, suite|
         key = suite.respond_to?(:id) ? suite.id : suite.to_s
@@ -232,7 +240,7 @@ module TestQueue
         pid = fork do
           @server.close if @server
 
-          iterator = Iterator.new(relay?? @relay : @socket, @suites, method(:around_filter))
+          iterator = Iterator.new(relay?? @relay : @socket, @suites, method(:around_filter), early_failure_limit: @early_failure_limit)
           after_fork_internal(num, iterator)
           ret = run_worker(iterator) || 0
           cleanup_worker
@@ -360,6 +368,10 @@ module TestQueue
             worker = Marshal.load(data)
             worker_completed(worker)
             remote_workers -= 1
+          when /^KABOOM/
+            # worker reporting an abnormal number of test failures;
+            # stop everything immediately and report the results.
+            break
           end
           sock.close
         end

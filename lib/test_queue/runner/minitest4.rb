@@ -46,6 +46,10 @@ class MiniTest::Unit::TestCase
       @@test_suites.keys.reject{ |s| s.test_methods.empty? }
     end
   end
+
+  def failure_count
+    failures.length
+  end
 end
 
 module TestQueue
