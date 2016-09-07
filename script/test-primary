@@ -17,10 +17,7 @@ if bundle exec minitest-queue ./test/*_minitest5.rb; then
   exit 1
 fi
 
-if bundle exec minitest-queue ./test/*_minispec.rb; then
-  echo >&2 "minitest-queue should have failed but didn't"
-  exit 1
-fi
+bundle exec minitest-queue ./test/*_minispec.rb
 
 if bundle exec rspec-queue test; then
   echo >&2 "rspec-queue should have failed but didn't"
