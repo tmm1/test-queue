@@ -1,0 +1,7 @@
+language: ruby
+install: true
+env:
+  - SUITE=testunit
+  - SUITE=minitest4
+  - SUITE=primary
+script: "script/test-$SUITE"
