@@ -6,10 +6,34 @@ export TEST_QUEUE_WORKERS=2 TEST_QUEUE_VERBOSE=1
 
 export BUNDLE_GEMFILE=Gemfile
 bundle install
-bundle exec minitest-queue ./test/*_minitest4.rb
-bundle exec minitest-queue ./test/*_minitest5.rb
-bundle exec minitest-queue ./test/*_minispec.rb
-bundle exec rspec-queue test
-bundle exec cucumber-queue
 
-TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep21,MiniTestSleep8,MiniTestFailure" bundle exec minitest-queue ./test/*_minitest5.rb
+if bundle exec minitest-queue ./test/*_minitest4.rb; then
+  echo >&2 "minitest-queue should have failed but didn't"
+  exit 1
+fi
+
+if bundle exec minitest-queue ./test/*_minitest5.rb; then
+  echo >&2 "minitest-queue should have failed but didn't"
+  exit 1
+fi
+
+if bundle exec minitest-queue ./test/*_minispec.rb; then
+  echo >&2 "minitest-queue should have failed but didn't"
+  exit 1
+fi
+
+if bundle exec rspec-queue test; then
+  echo >&2 "rspec-queue should have failed but didn't"
+  exit 1
+fi
+
+if bundle exec cucumber-queue; then
+  echo >&2 "cucumber-queue should have failed but didn't"
+  exit 1
+fi
+
+export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep21,MiniTestSleep8,MiniTestFailure"
+if bundle exec minitest-queue ./test/*_minitest5.rb; then
+  echo >&2 "minitest-queue should have failed but didn't"
+  exit 1
+fi
