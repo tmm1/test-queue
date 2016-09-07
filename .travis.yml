@@ -1,5 +1,5 @@
 language: ruby
-install: true
+install: script/bootstrap
 rvm:
   - 2.2
 env:
