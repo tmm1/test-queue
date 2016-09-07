@@ -1,5 +1,7 @@
 language: ruby
 install: true
+rvm:
+  - 2.2
 env:
   - SUITE=testunit
   - SUITE=minitest4
