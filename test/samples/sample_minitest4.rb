@@ -16,8 +16,10 @@ end
   end)
 end
 
-class MiniTestFailure < MiniTest::Unit::TestCase
-  def test_fail
-    assert_equal 0, 1
+if ENV["FAIL"]
+  class MiniTestFailure < MiniTest::Unit::TestCase
+    def test_fail
+      assert_equal 0, 1
+    end
   end
 end

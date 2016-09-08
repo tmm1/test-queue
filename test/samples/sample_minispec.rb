@@ -27,5 +27,11 @@ describe Meme do
       sleep 0.1
       @meme.will_it_blend?.wont_match /^no/i
     end
+
+    if ENV["FAIL"]
+      it "fails" do
+        @meme.will_it_blend?.must_equal "NO!"
+      end
+    end
   end
 end
