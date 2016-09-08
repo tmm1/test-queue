@@ -14,6 +14,10 @@ module Cucumber
       end
     end
   end
+
+  class Runtime
+    attr_writer :features
+  end
 end
 
 module TestQueue
@@ -31,7 +35,7 @@ module TestQueue
 
       def run_worker(iterator)
         if @features_loader.is_a?(Array)
-          @features_loader = iterator
+          @runtime.features = iterator
         else
           @features_loader.features = iterator
         end
