@@ -3,7 +3,10 @@ install: script/bootstrap
 rvm:
   - 2.2
 env:
+  - SUITE=primary
   - SUITE=testunit
   - SUITE=minitest4
-  - SUITE=primary
+  - SUITE=rspec3-0
+  - SUITE=rspec3-1
+  - SUITE=rspec3-2
 script: script/cibuild
