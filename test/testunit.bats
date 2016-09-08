@@ -1,11 +1,4 @@
-assert_output_contains() {
-  echo "$output" | grep "$@" || {
-    echo "Expected to find \"$@\" in:"
-    echo "$output"
-    return 1
-  }
-  return 0
-}
+load "testlib"
 
 @test "testunit-queue fails when a test fails" {
   run bundle exec testunit-queue ./test/samples/*_testunit.rb
