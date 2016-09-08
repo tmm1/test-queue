@@ -1,3 +1,28 @@
+# Skip this test unless the bundle contains a gem matching the required
+# version. Example:
+#
+#   require_gem "minitest" "~> 5.3"
+require_gem() {
+  name=$1
+  requirement=$2
+
+  set +e
+  version=$(bundle exec ruby - <<RUBY
+    spec = Gem.loaded_specs['$name']
+    exit unless spec
+    puts spec.version
+    exit Gem::Dependency.new('$name', '$requirement').match?(spec)
+RUBY)
+  result=$?
+  set -e
+
+  if [ "$version" = "" ]; then
+    skip "$name is not installed"
+  elif [ $result -ne 0 ]; then
+    skip "$name $version is not $requirement"
+  fi
+}
+
 assert_output_contains() {
   echo "$output" | grep -q "$@" || {
     echo "Expected to find \"$@\" in:"

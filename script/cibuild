@@ -12,9 +12,4 @@ fi
 
 bundle install
 
-if [ ! -f "test/$SUITE.bats" ]; then
-  echo >&2 "Unknown SUITE $SUITE"
-  exit 1
-fi
-
-vendor/bats/bin/bats test/$SUITE.bats
+vendor/bats/bin/bats test
