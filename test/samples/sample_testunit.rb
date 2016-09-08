@@ -16,8 +16,10 @@ end
   end)
 end
 
-class TestUnitFailure < Test::Unit::TestCase
-  def test_fail
-    assert_equal 0, 1
+if ENV["FAIL"]
+  class TestUnitFailure < Test::Unit::TestCase
+    def test_fail
+      assert_equal 0, 1
+    end
   end
 end

@@ -16,8 +16,10 @@ end
   end
 end
 
-describe 'RSpecFailure' do
-  it 'fails' do
-    expect(:foo).to eq :bar
+if ENV["FAIL"]
+  describe 'RSpecFailure' do
+    it 'fails' do
+      expect(:foo).to eq :bar
+    end
   end
 end

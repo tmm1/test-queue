@@ -7,7 +7,11 @@ When(/^b$/) do
 end
 
 When(/^bad$/) do
-  1.should == 0
+  if ENV["FAIL"]
+    1.should == 0
+  else
+    1.should == 1
+  end
 end
 
 Then(/^c$/) do

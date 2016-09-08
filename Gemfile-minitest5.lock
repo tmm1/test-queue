@@ -6,13 +6,11 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    power_assert (0.2.2)
-    test-unit (3.0.8)
-      power_assert
+    minitest (5.3.3)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
+  minitest (= 5.3.3)
   test-queue!
-  test-unit (= 3.0.8)
