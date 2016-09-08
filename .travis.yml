@@ -12,3 +12,5 @@ env:
   - SUITE=rspec3-2
   - SUITE=testunit
 script: script/cibuild
+notifications:
+  email: false
