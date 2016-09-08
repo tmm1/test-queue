@@ -72,3 +72,13 @@ load "testlib"
   assert_output_contains "cucumber test/samples/features/bad.feature:2 # Scenario: failure"
   assert_output_contains "cucumber test/samples/features/sample2.feature:26 # Scenario: failure"
 }
+
+@test "TEST_QUEUE_FORCE whitelists certain tests" {
+  export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep21,MiniTestSleep8"
+  run bundle exec minitest-queue ./test/samples/*_minitest5.rb
+  [ "$status" -eq 0 ]
+  assert_output_contains "Starting test-queue master"
+  assert_output_contains "MiniTestSleep21"
+  assert_output_contains "MiniTestSleep8"
+  refute_output_contains "MiniTestSleep9"
+}
