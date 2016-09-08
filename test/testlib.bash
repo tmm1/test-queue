@@ -12,7 +12,8 @@ require_gem() {
     exit unless spec
     puts spec.version
     exit Gem::Dependency.new('$name', '$requirement').match?(spec)
-RUBY)
+RUBY
+)
   result=$?
   set -e
 
