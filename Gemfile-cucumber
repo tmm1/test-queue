@@ -1,0 +1,4 @@
+source 'https://rubygems.org'
+gemspec
+gem 'cucumber', '~> 1.3.10'
+gem 'rspec-expectations', '~> 2.14.4'

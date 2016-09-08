@@ -1,0 +1,16 @@
+PATH
+  remote: .
+  specs:
+    test-queue (0.2.13)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    minitest (5.3.3)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  minitest (= 5.3.3)
+  test-queue!
