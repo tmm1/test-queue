@@ -1,16 +1,16 @@
 load "testlib"
 
-@test "cucumber-queue succeeds when all features pass" {
+setup() {
   require_gem "cucumber" ">= 1.0"
+}
 
+@test "cucumber-queue succeeds when all features pass" {
   run bundle exec cucumber-queue test/samples/features
   assert_status 0
   assert_output_contains "Starting test-queue master"
 }
 
 @test "cucumber-queue fails when a feature fails" {
-  require_gem "cucumber" ">= 1.0"
-
   export FAIL=1
   run bundle exec cucumber-queue test/samples/features
   assert_status 2

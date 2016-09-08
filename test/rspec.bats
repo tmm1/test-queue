@@ -1,16 +1,16 @@
 load "testlib"
 
-@test "rspec-queue succeeds when all specs pass" {
+setup() {
   require_gem "rspec" ">= 2.0"
+}
 
+@test "rspec-queue succeeds when all specs pass" {
   run bundle exec rspec-queue ./test/samples
   assert_status 0
   assert_output_contains "Starting test-queue master"
 }
 
 @test "rspec-queue fails when a spec fails" {
-  require_gem "rspec" ">= 2.0"
-
   export FAIL=1
   run bundle exec rspec-queue ./test/samples
   assert_status 1

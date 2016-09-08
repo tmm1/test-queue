@@ -1,16 +1,16 @@
 load "testlib"
 
-@test "minitest-queue succeeds when all tests pass" {
+setup() {
   require_gem "minitest" ">= 4.0"
+}
 
+@test "minitest-queue succeeds when all tests pass" {
   run bundle exec minitest-queue ./test/samples/*_minitest4.rb
   assert_status 0
   assert_output_contains "Starting test-queue master"
 }
 
 @test "minitest-queue fails when a test fails" {
-  require_gem "minitest" ">= 4.0"
-
   export FAIL=1
   run bundle exec minitest-queue ./test/samples/*_minitest4.rb
   assert_status 1
@@ -20,16 +20,12 @@ load "testlib"
 }
 
 @test "minitest-queue succeeds when all specs pass" {
-  require_gem "minitest" ">= 4.0"
-
   run bundle exec minitest-queue ./test/samples/*_minispec.rb
   assert_status 0
   assert_output_contains "Starting test-queue master"
 }
 
 @test "minitest-queue fails when a spec fails" {
-  require_gem "minitest" ">= 4.0"
-
   export FAIL=1
   run bundle exec minitest-queue ./test/samples/*_minispec.rb
   assert_status 1
