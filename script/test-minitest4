@@ -7,9 +7,9 @@ export TEST_QUEUE_WORKERS=2 TEST_QUEUE_VERBOSE=1
 export BUNDLE_GEMFILE=Gemfile-minitest4
 bundle install
 
-if bundle exec minitest-queue ./test/*_minitest4.rb; then
+if bundle exec minitest-queue ./test/samples/*_minitest4.rb; then
   echo >&2 "minitest-queue should have failed but didn't"
   exit 1
 fi
 
-bundle exec minitest-queue ./test/*_minispec.rb
+bundle exec minitest-queue ./test/samples/*_minispec.rb
