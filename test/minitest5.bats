@@ -4,7 +4,7 @@ load "testlib"
   require_gem "minitest" ">= 5.0"
 
   run bundle exec minitest-queue ./test/samples/*_minitest5.rb
-  [ "$status" -eq 0 ]
+  assert_status 0
   assert_output_contains "Starting test-queue master"
 }
 
@@ -13,7 +13,7 @@ load "testlib"
 
   export FAIL=1
   run bundle exec minitest-queue ./test/samples/*_minitest5.rb
-  [ "$status" -eq 1 ]
+  assert_status 1
   assert_output_contains "Starting test-queue master"
   assert_output_contains "1) Failure:"
   assert_output_contains "MiniTestFailure#test_fail"
@@ -24,7 +24,7 @@ load "testlib"
 
   export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep21,MiniTestSleep8"
   run bundle exec minitest-queue ./test/samples/*_minitest5.rb
-  [ "$status" -eq 0 ]
+  assert_status 0
   assert_output_contains "Starting test-queue master"
   assert_output_contains "MiniTestSleep21"
   assert_output_contains "MiniTestSleep8"
@@ -40,7 +40,7 @@ load "testlib"
   TEST_QUEUE_RELAY=0.0.0.0:12345 run bundle exec minitest-queue ./test/samples/sample_minitest5.rb
   wait
 
-  [ "$status" -eq 0 ]
+  assert_status 0
   assert_output_contains "Starting test-queue master"
 }
 
@@ -54,7 +54,7 @@ load "testlib"
   TEST_QUEUE_RELAY=0.0.0.0:12345 run bundle exec minitest-queue ./test/samples/sample_minitest5.rb
   wait
 
-  [ "$status" -eq 1 ]
+  assert_status 1
   assert_output_contains "Starting test-queue master"
   assert_output_contains "1) Failure:"
   assert_output_contains "MiniTestFailure#test_fail"

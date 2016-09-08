@@ -24,6 +24,15 @@ RUBY
   fi
 }
 
+assert_status() {
+  expected=$1
+  [ "$status" -eq "$expected" ] || {
+    echo "Expected status to be $expected but was $status"
+    return 1
+  }
+  return 0
+}
+
 assert_output_contains() {
   echo "$output" | grep -q "$@" || {
     echo "Expected to find \"$@\" in:"

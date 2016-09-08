@@ -4,7 +4,7 @@ load "testlib"
   require_gem "rspec" ">= 2.0"
 
   run bundle exec rspec-queue ./test/samples
-  [ "$status" -eq 0 ]
+  assert_status 0
   assert_output_contains "Starting test-queue master"
 }
 
@@ -13,7 +13,7 @@ load "testlib"
 
   export FAIL=1
   run bundle exec rspec-queue ./test/samples
-  [ "$status" -eq 1 ]
+  assert_status 1
   assert_output_contains "1) RSpecFailure fails"
   assert_output_contains "Failure/Error: expect(:foo).to eq :bar"
 }
