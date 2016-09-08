@@ -1,6 +1,7 @@
 ## test-queue
 
 [![Gem Version](https://badge.fury.io/rb/test-queue.svg)](https://rubygems.org/gems/test-queue)
+[![Build Status](https://travis-ci.org/tmm1/test-queue.svg?branch=master)](https://travis-ci.org/tmm1/test-queue)
 
 Yet another parallel test runner, built using a centralized queue to ensure
 optimal distribution of tests between workers.
