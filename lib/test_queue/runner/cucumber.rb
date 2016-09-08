@@ -23,8 +23,13 @@ end
 module TestQueue
   class Runner
     class Cucumber < Runner
+      class FakeKernel
+        def exit(n)
+        end
+      end
+
       def initialize
-        @cli             = ::Cucumber::Cli::Main.new(ARGV.dup)
+        @cli             = ::Cucumber::Cli::Main.new(ARGV.dup, $stdin, $stdout, $stderr, FakeKernel.new)
         @runtime         = ::Cucumber::Runtime.new(@cli.configuration)
         @features_loader = @runtime.send(:features)
 
@@ -41,6 +46,12 @@ module TestQueue
         end
 
         @cli.execute!(@runtime)
+
+        if @runtime.respond_to?(:summary_report, true)
+          @runtime.send(:summary_report).test_cases.total_failed
+        else
+          @runtime.results.scenarios(:failed).size
+        end
       end
 
       def summarize_worker(worker)
