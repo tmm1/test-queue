@@ -2,30 +2,4 @@
 
 set -ex
 
-if bundle exec minitest-queue ./test/samples/*_minitest4.rb; then
-  echo >&2 "minitest-queue should have failed but didn't"
-  exit 1
-fi
-
-if bundle exec minitest-queue ./test/samples/*_minitest5.rb; then
-  echo >&2 "minitest-queue should have failed but didn't"
-  exit 1
-fi
-
-bundle exec minitest-queue ./test/samples/*_minispec.rb
-
-if bundle exec rspec-queue test/samples; then
-  echo >&2 "rspec-queue should have failed but didn't"
-  exit 1
-fi
-
-if bundle exec cucumber-queue test/samples/features; then
-  echo >&2 "cucumber-queue should have failed but didn't"
-  exit 1
-fi
-
-export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep21,MiniTestSleep8,MiniTestFailure"
-if bundle exec minitest-queue ./test/samples/*_minitest5.rb; then
-  echo >&2 "minitest-queue should have failed but didn't"
-  exit 1
-fi
+vendor/bats/bin/bats test/primary.bats
