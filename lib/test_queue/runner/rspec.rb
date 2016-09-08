@@ -21,8 +21,7 @@ module TestQueue
     class RSpec < Runner
       def initialize
         @rspec = ::RSpec::Core::QueueRunner.new
-        @split_groups = ENV['TEST_QUEUE_SPLIT_GROUPS'] && ENV['TEST_QUEUE_SPLIT_GROUPS'].strip.downcase == 'true'
-        if @split_groups
+        if self.class.split_groups?
           groups = @rspec.example_groups
           groups_to_split, groups_to_keep = [], []
           groups.each do |group|

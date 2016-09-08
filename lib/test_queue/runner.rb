@@ -99,6 +99,10 @@ module TestQueue
         end
     end
 
+    def self.split_groups?
+      ENV['TEST_QUEUE_SPLIT_GROUPS'] && %w(1 true t yes y).include?(ENV['TEST_QUEUE_SPLIT_GROUPS'].strip.downcase)
+    end
+
     # Run the tests.
     #
     # If exit_when_done is true, exit! will be called before this method

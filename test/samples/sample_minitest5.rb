@@ -10,8 +10,9 @@ end
   Object.const_set("MiniTestSleep#{i}", Class.new(MiniTest::Test) do
     define_method('test_sleep') do
       start = Time.now
-      sleep(0.25)
-      assert_in_delta Time.now-start, 0.25, 0.02
+      sleep_time = 0.01 * i
+      sleep(sleep_time)
+      assert_in_delta Time.now-start, sleep_time, 0.02
     end
   end)
 end
