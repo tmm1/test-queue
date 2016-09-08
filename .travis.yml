@@ -6,4 +6,4 @@ env:
   - SUITE=testunit
   - SUITE=minitest4
   - SUITE=primary
-script: "script/test-$SUITE"
+script: script/cibuild
