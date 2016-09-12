@@ -2,7 +2,7 @@ require 'test_queue/runner'
 
 gem 'test-unit'
 require 'test/unit'
-require 'test/unit/collector/descendant'
+require 'test/unit/collector/objectspace'
 require 'test/unit/testresult'
 require 'test/unit/testsuite'
 require 'test/unit/ui/console/testrunner'
@@ -36,7 +36,7 @@ module TestQueue
   class Runner
     class TestUnit < Runner
       def initialize
-        @suite = Test::Unit::Collector::Descendant.new.collect
+        @suite = Test::Unit::Collector::ObjectSpace.new.collect
         tests = @suite.tests.sort_by{ |s| -(stats[s.to_s] || 0) }
         super(tests)
       end
