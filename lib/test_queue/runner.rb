@@ -299,23 +299,29 @@ module TestQueue
       worker.failure_output = ''
     end
 
-    def reap_worker(blocking=true)
-      if pid = Process.waitpid(-1, blocking ? 0 : Process::WNOHANG) and worker = @workers.delete(pid)
+    def reap_workers(blocking=true)
+      @workers.delete_if do |_, worker|
+        if Process.waitpid(worker.pid, blocking ? 0 : Process::WNOHANG).nil?
+          next false
+        end
+
         worker.status = $?
         worker.end_time = Time.now
 
-        if File.exists?(file = "/tmp/test_queue_worker_#{pid}_output")
+        if File.exists?(file = "/tmp/test_queue_worker_#{worker.pid}_output")
           worker.output = IO.binread(file)
           FileUtils.rm(file)
         end
 
-        if File.exists?(file = "/tmp/test_queue_worker_#{pid}_stats")
+        if File.exists?(file = "/tmp/test_queue_worker_#{worker.pid}_stats")
           worker.stats = Marshal.load(IO.binread(file))
           FileUtils.rm(file)
         end
 
         relay_to_master(worker) if relay?
         worker_completed(worker)
+
+        true
       end
     end
 
@@ -333,7 +339,7 @@ module TestQueue
         queue_status(@start_time, @queue.size, @workers.size, remote_workers)
 
         if IO.select([@server], nil, nil, 0.1).nil?
-          reap_worker(false) if @workers.any? # check for worker deaths
+          reap_workers(false) # check for worker deaths
         else
           sock = @server.accept
           cmd = sock.gets.strip
@@ -375,10 +381,7 @@ module TestQueue
       end
     ensure
       stop_master
-
-      until @workers.empty?
-        reap_worker
-      end
+      reap_workers
     end
 
     def relay?
@@ -417,9 +420,7 @@ module TestQueue
         Process.kill 'KILL', pid
       end
 
-      until @workers.empty?
-        reap_worker
-      end
+      reap_workers
     end
 
     # Stop the test run immediately.
