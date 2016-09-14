@@ -62,6 +62,9 @@ module TestQueue
         else
           2
         end
+      unless @concurrency > 0
+        raise ArgumentError, "Worker count (#{@concurrency}) must be greater than 0"
+      end
 
       @slave_connection_timeout =
         (ENV['TEST_QUEUE_RELAY_TIMEOUT'] && ENV['TEST_QUEUE_RELAY_TIMEOUT'].to_i) ||
@@ -108,11 +111,9 @@ module TestQueue
       $stdout.sync = $stderr.sync = true
       @start_time = Time.now
 
-      @concurrency > 0 ?
-        execute_parallel :
-        execute_sequential
-
+      execute_internal
       exitstatus = summarize_internal
+
       if exit_when_done
         exit! exitstatus
       else
@@ -171,11 +172,7 @@ module TestQueue
       '.test_queue_stats'
     end
 
-    def execute_sequential
-      run_worker(@queue)
-    end
-
-    def execute_parallel
+    def execute_internal
       start_master
       prepare(@concurrency)
       @prepared_time = Time.now

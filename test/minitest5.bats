@@ -53,3 +53,10 @@ setup() {
   assert_output_contains "1) Failure:"
   assert_output_contains "MiniTestFailure#test_fail"
 }
+
+@test "fails when TEST_QUEUE_WORKERS is <= 0" {
+  export TEST_QUEUE_WORKERS=0
+  run bundle exec minitest-queue ./test/samples/sample_minitest5.rb
+  assert_status 1
+  assert_output_contains "Worker count (0) must be greater than 0"
+}
