@@ -18,7 +18,17 @@ module RSpec::Core
         begin
           @configuration.run_hook(:before, :suite)
           iterator.map {|g|
-            print "    #{g.description}: "
+            if g.is_a? ::RSpec::Core::Example
+              print "    #{g.full_description}: "
+              example = g
+              g = example.example_group
+              ::RSpec.world.filtered_examples.clear
+              examples = [example]
+              examples.extend(::RSpec::Core::Extensions::Ordered::Examples)
+              ::RSpec.world.filtered_examples[g] = examples
+            else
+              print "    #{g.description}: "
+            end
             start = Time.now
             ret = g.run(reporter)
             diff = Time.now-start
