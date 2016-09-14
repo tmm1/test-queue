@@ -2,7 +2,14 @@ require "rspec"
 
 describe 'SplittableGroup' do
   it 'runs one test' do
-    sleep(1)
+    # Sleep longer in CI to make the distribution of examples across workers
+    # more deterministic.
+    if ENV["CI"]
+      sleep(5)
+    else
+      sleep(1)
+    end
+
     expect(1).to eq 1
   end
 
