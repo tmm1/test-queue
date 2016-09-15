@@ -52,7 +52,7 @@ module TestQueue
         tests = ::MiniTest::Test.runnables.reject { |s|
           s.runnable_methods.empty?
         }.sort_by { |s|
-          -(stats[s.to_s] || 0)
+          -(stats.suite_duration(s.to_s) || 0)
         }.partition { |s|
           s.test_order == :parallel
         }.reverse.flatten

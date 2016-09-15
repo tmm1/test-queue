@@ -37,7 +37,7 @@ module TestQueue
     class TestUnit < Runner
       def initialize
         @suite = Test::Unit::Collector::Descendant.new.collect
-        tests = @suite.tests.sort_by{ |s| -(stats[s.to_s] || 0) }
+        tests = @suite.tests.sort_by{ |s| -(stats.suite_duration(s.to_s) || 0) }
         super(tests)
       end
 

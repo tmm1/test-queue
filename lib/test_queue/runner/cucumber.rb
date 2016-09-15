@@ -34,7 +34,7 @@ module TestQueue
         @features_loader = @runtime.send(:features)
 
         features = @features_loader.is_a?(Array) ? @features_loader : @features_loader.features
-        features = features.sort_by { |s| -(stats[s.to_s] || 0) }
+        features = features.sort_by { |s| -(stats.suite_duration(s.to_s) || 0) }
         super(features)
       end
 
