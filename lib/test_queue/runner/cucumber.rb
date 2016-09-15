@@ -55,10 +55,6 @@ module TestQueue
       end
 
       def summarize_worker(worker)
-        worker.stats.each do |s, val|
-          stats[s.to_s] = val
-        end
-
         output                = worker.output.gsub(/\e\[\d+./, '')
         worker.summary        = output.split("\n").grep(/^\d+ (scenarios?|steps?)/).first
         worker.failure_output = output.scan(/^Failing Scenarios:\n(.*)\n\d+ scenarios?/m).join("\n")

@@ -10,10 +10,6 @@ module TestQueue
   class Runner
     class MiniTest < Runner
       def summarize_worker(worker)
-        worker.stats.each do |s, val|
-          stats[s.to_s] = val
-        end
-
         worker.summary = worker.lines.grep(/, \d+ errors?, /).first
         failures  = worker.lines.select{ |line|
           line if (line =~ /^Finished/) ... (line =~ /, \d+ errors?, /)

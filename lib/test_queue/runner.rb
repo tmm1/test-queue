@@ -128,7 +128,12 @@ module TestQueue
 
       @failures = ''
       @completed.each do |worker|
+        worker.stats.each do |s, val|
+          stats[s.to_s] = val
+        end
+
         summarize_worker(worker)
+
         @failures << worker.failure_output if worker.failure_output
 
         puts "    [%2d] %60s      %4d suites in %.4fs      (pid %d exit %d%s)" % [
