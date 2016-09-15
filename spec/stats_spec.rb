@@ -32,6 +32,12 @@ RSpec.describe TestQueue::Stats do
       stats = TestQueue::Stats.new(@path)
       expect(stats.all_suites).to be_empty
     end
+
+    it "ignores stats files with a wrong version number" do
+      File.write(@path, Marshal.dump({ :version => 1e8, :suites => "boom" }))
+      stats = TestQueue::Stats.new(@path)
+      expect(stats.all_suites).to be_empty
+    end
   end
 
   it "can save and load data" do
