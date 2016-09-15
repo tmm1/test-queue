@@ -2,6 +2,10 @@
 
 set -ex
 
+if [ "$SUITE" = "ruby" ]; then
+  exec script/spec
+fi
+
 export TEST_QUEUE_WORKERS=2 TEST_QUEUE_VERBOSE=1
 
 if [ -f "Gemfile-$SUITE" ]; then

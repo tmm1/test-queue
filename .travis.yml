@@ -3,6 +3,7 @@ install: script/bootstrap
 rvm:
   - 2.2
 env:
+  - SUITE=ruby
   - SUITE=cucumber1-3
   - SUITE=cucumber2-4
   - SUITE=minitest4

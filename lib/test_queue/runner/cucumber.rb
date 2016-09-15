@@ -34,7 +34,7 @@ module TestQueue
         @features_loader = @runtime.send(:features)
 
         features = @features_loader.is_a?(Array) ? @features_loader : @features_loader.features
-        features = features.sort_by { |s| -(stats[s.to_s] || 0) }
+        features = features.sort_by { |s| -(stats.suite_duration(s.to_s) || 0) }
         super(features)
       end
 
@@ -55,10 +55,6 @@ module TestQueue
       end
 
       def summarize_worker(worker)
-        worker.stats.each do |s, val|
-          stats[s.to_s] = val
-        end
-
         output                = worker.output.gsub(/\e\[\d+./, '')
         worker.summary        = output.split("\n").grep(/^\d+ (scenarios?|steps?)/).first
         worker.failure_output = output.scan(/^Failing Scenarios:\n(.*)\n\d+ scenarios?/m).join("\n")

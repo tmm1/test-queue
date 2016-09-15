@@ -30,9 +30,9 @@ module TestQueue
           end
           queue = groups_to_split.map(&:descendant_filtered_examples).flatten
           queue.concat groups_to_keep
-          queue.sort_by!{ |s| -(stats[s.respond_to?(:id) ? s.id : s.to_s] || 0) }
+          queue.sort_by!{ |s| -(stats.suite_duration(s.respond_to?(:id) ? s.id : s.to_s) || 0) }
         else
-          queue = @rspec.example_groups.sort_by{ |s| -(stats[s.to_s] || 0) }
+          queue = @rspec.example_groups.sort_by{ |s| -(stats.suite_duration(s.to_s) || 0) }
         end
 
         super(queue)
@@ -44,10 +44,6 @@ module TestQueue
       end
 
       def summarize_worker(worker)
-        worker.stats.each do |s, val|
-          stats[s] = val
-        end
-
         worker.summary  = worker.lines.grep(/ examples?, /).first
         worker.failure_output = worker.output[/^Failures:\n\n(.*)\n^Finished/m, 1]
       end

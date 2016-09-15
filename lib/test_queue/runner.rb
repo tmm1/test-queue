@@ -1,19 +1,23 @@
 require 'socket'
 require 'fileutils'
 require 'securerandom'
+require 'test_queue/stats'
 
 module TestQueue
   class Worker
-    attr_accessor :pid, :status, :output, :stats, :num, :host
+    attr_accessor :pid, :status, :output, :num, :host
     attr_accessor :start_time, :end_time
     attr_accessor :summary, :failure_output
+
+    # Array of TestQueue::Stats::Suite recording all the suites this worker ran.
+    attr_reader :suites
 
     def initialize(pid, num)
       @pid = pid
       @num = num
       @start_time = Time.now
       @output = ''
-      @stats = {}
+      @suites = []
     end
 
     def lines
@@ -23,6 +27,7 @@ module TestQueue
 
   class Runner
     attr_accessor :concurrency, :exit_when_done
+    attr_reader :stats
 
     def initialize(queue, concurrency=nil, socket=nil, relay=nil)
       raise ArgumentError, 'array required' unless Array === queue
@@ -94,12 +99,7 @@ module TestQueue
     end
 
     def stats
-      @stats ||=
-        if File.exists?(file = stats_file)
-          Marshal.load(IO.binread(file)) || {}
-        else
-          {}
-        end
+      @stats ||= Stats.new(stats_file)
     end
 
     # Run the tests.
@@ -128,13 +128,16 @@ module TestQueue
 
       @failures = ''
       @completed.each do |worker|
+        @stats.record_suites(worker.suites)
+
         summarize_worker(worker)
+
         @failures << worker.failure_output if worker.failure_output
 
         puts "    [%2d] %60s      %4d suites in %.4fs      (pid %d exit %d%s)" % [
           worker.num,
           worker.summary,
-          worker.stats.size,
+          worker.suites.size,
           worker.end_time - worker.start_time,
           worker.pid,
           worker.status.exitstatus,
@@ -151,11 +154,7 @@ module TestQueue
 
       puts
 
-      if @stats
-        File.open(stats_file, 'wb') do |f|
-          f.write Marshal.dump(stats)
-        end
-      end
+      @stats.save
 
       summarize
 
@@ -313,8 +312,8 @@ module TestQueue
           FileUtils.rm(file)
         end
 
-        if File.exists?(file = "/tmp/test_queue_worker_#{worker.pid}_stats")
-          worker.stats = Marshal.load(IO.binread(file))
+        if File.exists?(file = "/tmp/test_queue_worker_#{worker.pid}_suites")
+          worker.suites.replace(Marshal.load(IO.binread(file)))
           FileUtils.rm(file)
         end
 
