@@ -31,9 +31,9 @@ setup() {
 
 @test "multi-master succeeds when all tests pass" {
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
-  TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec minitest-queue ./test/samples/sample_minitest5.rb &
+  TEST_QUEUE_RELAY=0.0.0.0:12345 bundle exec minitest-queue ./test/samples/sample_minitest5.rb || true &
   sleep 0.1
-  TEST_QUEUE_RELAY=0.0.0.0:12345 run bundle exec minitest-queue ./test/samples/sample_minitest5.rb
+  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec minitest-queue ./test/samples/sample_minitest5.rb
   wait
 
   assert_status 0
@@ -43,9 +43,9 @@ setup() {
 @test "multi-master fails when a test fails" {
   export FAIL=1
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
-  TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec minitest-queue ./test/samples/sample_minitest5.rb &
+  TEST_QUEUE_RELAY=0.0.0.0:12345 bundle exec minitest-queue ./test/samples/sample_minitest5.rb || true &
   sleep 0.1
-  TEST_QUEUE_RELAY=0.0.0.0:12345 run bundle exec minitest-queue ./test/samples/sample_minitest5.rb
+  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec minitest-queue ./test/samples/sample_minitest5.rb
   wait
 
   assert_status 1
