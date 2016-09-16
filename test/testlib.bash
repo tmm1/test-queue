@@ -35,7 +35,7 @@ assert_status() {
 }
 
 assert_output_contains() {
-  echo "$output" | grep -q "$@" || {
+  echo "$output" | fgrep --quiet "$@" || {
     echo "Expected to find \"$@\" in:"
     echo "$output"
     return 1
@@ -46,6 +46,24 @@ assert_output_contains() {
 refute_output_contains() {
   assert_output_contains "$@" && {
     echo "Expected not to find \"$@\" in:"
+    echo "$output"
+    return 1
+  }
+  return 0
+}
+
+assert_output_matches() {
+  echo "$output" | egrep --quiet "$@" || {
+    echo "Expected to \"$@\" to match within:"
+    echo "$output"
+    return 1
+  }
+  return 0
+}
+
+refute_output_matches() {
+  assert_output_matches "$@" && {
+    echo "Expected \"$@\" not to match within:"
     echo "$output"
     return 1
   }

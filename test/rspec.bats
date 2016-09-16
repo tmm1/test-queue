@@ -23,9 +23,16 @@ setup() {
   run bundle exec rspec-queue ./test/samples/sample_split_spec.rb
   assert_status 0
 
-  # One worker should get tied up with the slow example in the splittable
-  # group. The other worker should run the fast example from the splittable
-  # group plus the two examples in the unsplittable group.
-  assert_output_contains "1 example, 0 failures"
-  assert_output_contains "3 examples, 0 failures"
+  assert_output_matches '\[ 1\] +1 example, 0 failures'
+  assert_output_matches '\[ 2\] +1 example, 0 failures'
+}
+
+@test "TEST_QUEUE_SPLIT_GROUPS does not split unsplittable groups" {
+  export TEST_QUEUE_SPLIT_GROUPS=true
+  export NOSPLIT=1
+  run bundle exec rspec-queue ./test/samples/sample_split_spec.rb
+  assert_status 0
+
+  assert_output_contains "2 examples, 0 failures"
+  assert_output_contains "0 examples, 0 failures"
 }
