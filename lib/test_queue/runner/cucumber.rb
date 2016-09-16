@@ -72,6 +72,12 @@ module TestQueue
     class Cucumber < TestFramework
       class FakeKernel
         def exit(n)
+          if $!
+            # Let Cucumber exit for raised exceptions.
+            Kernel.exit(n)
+          end
+          # Don't let Cucumber exit to indicate test failures. We want to
+          # return the number of failures from #run_worker instead.
         end
       end
 
