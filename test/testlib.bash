@@ -51,3 +51,21 @@ refute_output_contains() {
   }
   return 0
 }
+
+assert_output_matches() {
+  echo "$output" | egrep --quiet "$@" || {
+    echo "Expected to \"$@\" to match within:"
+    echo "$output"
+    return 1
+  }
+  return 0
+}
+
+refute_output_matches() {
+  assert_output_matches "$@" && {
+    echo "Expected \"$@\" not to match within:"
+    echo "$output"
+    return 1
+  }
+  return 0
+}
