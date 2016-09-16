@@ -1,7 +1,9 @@
+require 'set'
 require 'socket'
 require 'fileutils'
 require 'securerandom'
 require 'test_queue/stats'
+require 'test_queue/test_framework'
 
 module TestQueue
   class Worker
@@ -29,15 +31,9 @@ module TestQueue
     attr_accessor :concurrency, :exit_when_done
     attr_reader :stats
 
-    def initialize(queue, concurrency=nil, socket=nil, relay=nil)
-      raise ArgumentError, 'array required' unless Array === queue
-
-      if forced = ENV['TEST_QUEUE_FORCE']
-        forced = forced.split(/\s*,\s*/)
-        whitelist = Set.new(forced)
-        queue = queue.select{ |s| whitelist.include?(s.to_s) }
-        queue.sort_by!{ |s| forced.index(s.to_s) }
-      end
+    def initialize(test_framework, concurrency=nil, socket=nil, relay=nil)
+      @test_framework = test_framework
+      @stats = Stats.new(stats_file)
 
       if ENV['TEST_QUEUE_EARLY_FAILURE_LIMIT']
         begin
@@ -48,11 +44,24 @@ module TestQueue
       end
 
       @procline = $0
-      @suites = queue.inject(Hash.new) do |hash, suite|
-        key = suite.respond_to?(:id) ? suite.id : suite.to_s
-        hash.update key => suite
+
+      @whitelist = Set.new
+
+      all_files = @test_framework.all_suite_paths.to_set
+      @queue = @stats.all_suites
+        .select { |suite| all_files.include?(suite.path) }
+        .sort_by { |suite| -suite.duration }
+        .map { |suite| [suite.name, suite.path] }
+
+      if forced = ENV['TEST_QUEUE_FORCE']
+        forced = forced.split(/\s*,\s*/)
+        @whitelist.merge(forced)
+        @queue.select! { |suite_name, path| @whitelist.include?(suite_name) }
+        @queue.sort_by! { |suite_name, path| forced.index(suite_name) }
       end
-      @queue = @suites.keys
+
+      @whitelist.freeze
+      @original_queue = Set.new(@queue).freeze
 
       @workers = {}
       @completed = []
@@ -96,10 +105,6 @@ module TestQueue
       end
 
       @exit_when_done = true
-    end
-
-    def stats
-      @stats ||= Stats.new(stats_file)
     end
 
     # Run the tests.
@@ -176,6 +181,7 @@ module TestQueue
       prepare(@concurrency)
       @prepared_time = Time.now
       start_relay if relay?
+      discover_suites
       spawn_workers
       distribute_queue
     ensure
@@ -236,7 +242,7 @@ module TestQueue
         pid = fork do
           @server.close if @server
 
-          iterator = Iterator.new(relay?? @relay : @socket, @suites, method(:around_filter), early_failure_limit: @early_failure_limit)
+          iterator = Iterator.new(@test_framework, relay?? @relay : @socket, method(:around_filter), early_failure_limit: @early_failure_limit)
           after_fork_internal(num, iterator)
           ret = run_worker(iterator) || 0
           cleanup_worker
@@ -245,6 +251,37 @@ module TestQueue
 
         @workers[pid] = Worker.new(pid, num)
       end
+    end
+
+    def discover_suites
+      return if relay?
+      @discovering_suites_pid = fork do
+        @test_framework.all_suite_paths.each do |path|
+          @test_framework.suites_from_path(path).each do |suite_name, suite|
+            @server.connect_address.connect do |sock|
+              sock.puts("NEW SUITE #{Marshal.dump([suite_name, path])}")
+            end
+          end
+        end
+
+        Kernel.exit! 0
+      end
+    end
+
+    def enqueue_discovered_suite(suite_name, path)
+      if @whitelist.any? && !@whitelist.include?(suite_name)
+        return
+      end
+
+      if @original_queue.include?([suite_name, path])
+        # This suite was already added to the queue some other way.
+        return
+      end
+
+      # We don't know how long new suites will take to run, so we put them at
+      # the front of the queue. It's better to run a fast suite early than to
+      # run a slow suite late.
+      @queue.unshift [suite_name, path]
     end
 
     def after_fork_internal(num, iterator)
@@ -334,8 +371,14 @@ module TestQueue
       return if relay?
       remote_workers = 0
 
-      until @queue.empty? && remote_workers == 0
+      until @discovering_suites_pid.nil? && @queue.empty? && remote_workers == 0
         queue_status(@start_time, @queue.size, @workers.size, remote_workers)
+
+        # Make sure our discovery process is still doing OK.
+        if @discovering_suites_pid && Process.waitpid(@discovering_suites_pid, Process::WNOHANG) != nil
+          @discovering_suites_pid = nil
+          abort("Discovering suites failed.") unless $?.success?
+        end
 
         if IO.select([@server], nil, nil, 0.1).nil?
           reap_workers(false) # check for worker deaths
@@ -346,8 +389,10 @@ module TestQueue
           when /^POP/
             # If we have a slave from a different test run, don't respond, and it will consider the test run done.
             if obj = @queue.shift
-              data = Marshal.dump(obj.to_s)
+              data = Marshal.dump(obj)
               sock.write(data)
+            elsif @discovering_suites_pid
+              sock.write(Marshal.dump("WAIT"))
             end
           when /^SLAVE (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
             num = $1.to_i
@@ -370,6 +415,9 @@ module TestQueue
             worker = Marshal.load(data)
             worker_completed(worker)
             remote_workers -= 1
+          when /^NEW SUITE (.+)/
+            suite_name, path = Marshal.load($1)
+            enqueue_discovered_suite(suite_name, path)
           when /^KABOOM/
             # worker reporting an abnormal number of test failures;
             # stop everything immediately and report the results.

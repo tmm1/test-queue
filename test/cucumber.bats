@@ -30,14 +30,15 @@ teardown() {
 @test "cucumber-queue fails when given a missing feature" {
   run bundle exec cucumber-queue test/samples/does_not_exist.feature --require test/samples/features/step_definitions
   assert_status 1
-  assert_output_contains "No such file or directory"
+  assert_output_contains "Aborting: Discovering suites failed."
 }
 
 @test "cucumber-queue fails when given a malformed feature" {
   [ -f README.md ]
   run bundle exec cucumber-queue README.md --require test/samples/features/step_definitions
   assert_status 1
-  assert_output_contains "No such file or directory"
+  # Cucumber 1 and 2 give different error output here.
+  assert_output_matches 'Aborting: Discovering suites failed\.|README\.md: Parser errors:'
 }
 
 @test "cucumber-queue handles test file being deleted" {

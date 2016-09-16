@@ -79,7 +79,7 @@ teardown() {
   [ -f README.md ]
   run bundle exec minitest-queue README.md
   assert_status 1
-  assert_output_contains "\`require': cannot load such file"
+  assert_output_contains "Aborting: Discovering suites failed"
 }
 
 @test "minitest-queue handles test file being deleted" {
