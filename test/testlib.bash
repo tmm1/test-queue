@@ -35,7 +35,7 @@ assert_status() {
 }
 
 assert_output_contains() {
-  echo "$output" | grep -q "$@" || {
+  echo "$output" | fgrep --quiet "$@" || {
     echo "Expected to find \"$@\" in:"
     echo "$output"
     return 1
