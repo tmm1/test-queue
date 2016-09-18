@@ -8,48 +8,64 @@ require 'test/unit/testsuite'
 require 'test/unit/ui/console/testrunner'
 
 class Test::Unit::TestSuite
-  attr_accessor :iterator
-
-  def run(result, &progress_block)
-    @start_time = Time.now
-    yield(STARTED, name)
-    yield(STARTED_OBJECT, self)
-    run_startup(result)
-    (@iterator || @tests).each do |test|
-      @n_tests += test.size
-      run_test(test, result, &progress_block)
-      @passed = false unless test.passed?
-    end
-    run_shutdown(result)
-  ensure
-    @elapsed_time = Time.now - @start_time
-    yield(FINISHED, name)
-    yield(FINISHED_OBJECT, self)
+  def run_internal(result, &progress_block)
+    @result = result
+    run(result, &progress_block)
   end
 
   def failure_count
-    (@iterator || @tests).map {|t| t.instance_variable_get(:@_result).failure_count}.inject(0, :+)
+    @result.failure_count
   end
 end
 
 module TestQueue
   class Runner
     class TestUnit < Runner
+      class IteratableTestSuite
+        def initialize(iterator)
+          @iterator = iterator
+        end
+
+        def run(*args, &block)
+          @iterator.each do |suite|
+            suite.run_internal(*args, &block)
+          end
+        end
+
+        def size
+          0
+        end
+      end
+
       def initialize
         @suite = Test::Unit::Collector::Descendant.new.collect
-        tests = @suite.tests.sort_by{ |s| -(stats.suite_duration(s.to_s) || 0) }
-        super(tests)
+        suites = []
+        collect_suites(@suite, suites)
+        suites = suites.sort_by{ |s| -(stats.suite_duration(s.to_s) || 0) }
+        super(suites)
       end
 
       def run_worker(iterator)
-        @suite.iterator = iterator
-        res = Test::Unit::UI::Console::TestRunner.new(@suite).start
+        suite = IteratableTestSuite.new(iterator)
+        res = Test::Unit::UI::Console::TestRunner.new(suite).start
         res.run_count - res.pass_count
       end
 
       def summarize_worker(worker)
         worker.summary = worker.output.split("\n").grep(/^\d+ tests?/).first
         worker.failure_output = worker.output.scan(/^Failure:\n(.*)\n=======================*/m).join("\n")
+      end
+
+      private
+      def collect_suites(suite, suites)
+        required = suite.tests.any? { |test| test.is_a?(Test::Unit::TestCase) }
+        if required
+          suites << suite
+        else
+          suite.tests.each do |suite|
+            collect_suites(suite, suites)
+          end
+        end
       end
     end
   end
