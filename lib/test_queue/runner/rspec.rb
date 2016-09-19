@@ -37,7 +37,7 @@ module TestQueue
 
   class TestFramework
     class RSpec < TestFramework
-      def all_suite_paths
+      def all_suite_files
         options = ::RSpec::Core::ConfigurationOptions.new(ARGV)
         options.parse_options if options.respond_to?(:parse_options)
         options.configure(::RSpec.configuration)

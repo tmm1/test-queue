@@ -89,7 +89,7 @@ module TestQueue
         @runtime ||= ::Cucumber::Runtime.new(cli.configuration)
       end
 
-      def all_suite_paths
+      def all_suite_files
         if runtime.respond_to?(:feature_files, true)
           runtime.send(:feature_files)
         else

@@ -58,7 +58,7 @@ module TestQueue
 
   class TestFramework
     class TestUnit < TestFramework
-      def all_suite_paths
+      def all_suite_files
         ARGV
       end
 
