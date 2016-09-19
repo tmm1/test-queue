@@ -39,6 +39,7 @@ module TestQueue
           item = Marshal.load(data)
           break if item.nil? || item.empty?
           if item == "WAIT"
+            $0 = "#{@procline} - Waiting for work"
             sleep 0.1
             next
           end
