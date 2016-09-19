@@ -62,7 +62,7 @@ module TestQueue
         ARGV
       end
 
-      def suites_from_path(path)
+      def suites_from_file(path)
         Test::Unit::TestCase::DESCENDANTS.clear
         require File.absolute_path(path)
         Test::Unit::Collector::Descendant.new.collect.tests.map { |suite|

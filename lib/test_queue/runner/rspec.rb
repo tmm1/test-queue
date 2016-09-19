@@ -45,7 +45,7 @@ module TestQueue
         ::RSpec.configuration.files_to_run.uniq
       end
 
-      def suites_from_path(path)
+      def suites_from_file(path)
         ::RSpec.world.reset
         load path
         split_groups(::RSpec.world.example_groups).map { |example_or_group|

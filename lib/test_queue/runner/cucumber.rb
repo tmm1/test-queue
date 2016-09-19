@@ -97,7 +97,7 @@ module TestQueue
         end
       end
 
-      def suites_from_path(path)
+      def suites_from_file(path)
         if defined?(::Cucumber::Core::Gherkin::Document)
           source = ::Cucumber::Runtime::NormalisedEncodingFile.read(path)
           doc = ::Cucumber::Core::Gherkin::Document.new(path, source)

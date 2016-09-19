@@ -76,7 +76,7 @@ module TestQueue
         ARGV
       end
 
-      def suites_from_path(path)
+      def suites_from_file(path)
         ::MiniTest::Unit::TestCase.reset
         require File.absolute_path(path)
         ::MiniTest::Unit::TestCase.original_test_suites.map { |suite|

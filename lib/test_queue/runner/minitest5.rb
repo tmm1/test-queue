@@ -75,7 +75,7 @@ module TestQueue
         ARGV
       end
 
-      def suites_from_path(path)
+      def suites_from_file(path)
         ::MiniTest::Test.reset
         require File.absolute_path(path)
         ::MiniTest::Test.runnables

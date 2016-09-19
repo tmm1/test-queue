@@ -10,11 +10,11 @@ module TestQueue
     # to load.
     #
     # Returns an Enumerable of String file paths.
-    def all_suite_paths
+    def all_suite_files
       raise NotImplementedError
     end
 
-    # Load all suites from the specified path.
+    # Load all suites from the specified file path.
     #
     # path - String file path to load suites from
     #
@@ -22,7 +22,7 @@ module TestQueue
     #   suite_name   - String that uniquely identifies this suite
     #   suite        - Framework-specific object that can be used to actually
     #                  run the suite
-    def suites_from_path(path)
+    def suites_from_file(path)
       raise NotImplementedError
     end
   end
