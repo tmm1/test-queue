@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    test-queue (0.2.13)
+    test-queue (0.3.0)
 
 GEM
   remote: https://rubygems.org/
@@ -26,3 +26,6 @@ PLATFORMS
 DEPENDENCIES
   rspec (~> 3.0.0)
   test-queue!
+
+BUNDLED WITH
+   1.13.1
