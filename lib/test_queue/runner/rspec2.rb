@@ -6,13 +6,6 @@ module RSpec::Core
       @configuration.error_stream  = $stderr
     end
 
-    def example_groups
-      @options.configure(@configuration)
-      @configuration.load_spec_files
-      @world.announce_filters
-      @world.example_groups
-    end
-
     def run_each(iterator)
       @configuration.reporter.report(0, @configuration.randomize? ? @configuration.seed : nil) do |reporter|
         begin

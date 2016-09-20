@@ -1,10 +1,11 @@
 module TestQueue
   class Stats
     class Suite
-      attr_reader :name, :duration, :last_seen_at
+      attr_reader :name, :path, :duration, :last_seen_at
 
-      def initialize(name, duration, last_seen_at)
+      def initialize(name, path, duration, last_seen_at)
         @name = name
+        @path = path
         @duration = duration
         @last_seen_at = last_seen_at
 
@@ -14,17 +15,19 @@ module TestQueue
       def ==(other)
         other &&
           name == other.name &&
+          path == other.path &&
           duration == other.duration &&
           last_seen_at == other.last_seen_at
       end
       alias_method :eql?, :==
 
       def to_h
-        { :name => name, :duration => duration, :last_seen_at => last_seen_at.to_i }
+        { :name => name, :path => path, :duration => duration, :last_seen_at => last_seen_at.to_i }
       end
 
       def self.from_hash(hash)
         self.new(hash.fetch(:name),
+                 hash.fetch(:path),
                  hash.fetch(:duration),
                  Time.at(hash.fetch(:last_seen_at)))
       end
@@ -40,9 +43,8 @@ module TestQueue
       @suites.values
     end
 
-    def suite_duration(name)
-      suite = @suites[name]
-      suite && suite.duration
+    def suite(name)
+      @suites[name]
     end
 
     def record_suites(suites)
@@ -61,7 +63,7 @@ module TestQueue
 
     private
 
-    CURRENT_VERSION = 1
+    CURRENT_VERSION = 2
 
     def to_h
       suites = @suites.each_value.map(&:to_h)

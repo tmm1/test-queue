@@ -1,4 +1,5 @@
 require 'test_queue/runner'
+require 'set'
 require 'stringio'
 
 class MiniTestQueueRunner < MiniTest::Unit
@@ -56,13 +57,31 @@ module TestQueue
   class Runner
     class MiniTest < Runner
       def initialize
-        tests = ::MiniTest::Unit::TestCase.original_test_suites.sort_by{ |s| -(stats.suite_duration(s.to_s) || 0) }
-        super(tests)
+        if ::MiniTest::Unit::TestCase.original_test_suites.any?
+          fail "Do not `require` test files. Pass them via ARGV instead and they will be required as needed."
+        end
+        super(TestFramework::MiniTest.new)
       end
 
       def run_worker(iterator)
         ::MiniTest::Unit::TestCase.test_suites = iterator
         ::MiniTest::Unit.new.run
+      end
+    end
+  end
+
+  class TestFramework
+    class MiniTest < TestFramework
+      def all_suite_files
+        ARGV
+      end
+
+      def suites_from_file(path)
+        ::MiniTest::Unit::TestCase.reset
+        require File.absolute_path(path)
+        ::MiniTest::Unit::TestCase.original_test_suites.map { |suite|
+          [suite.name, suite]
+        }
       end
     end
   end

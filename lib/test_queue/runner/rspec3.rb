@@ -20,13 +20,8 @@ module RSpec::Core
       super(options)
     end
 
-    def example_groups
-      setup($stderr, $stdout)
-      @world.ordered_example_groups
-    end
-
     def run_specs(iterator)
-      @configuration.reporter.report(@world.ordered_example_groups.count) do |reporter|
+      @configuration.reporter.report(0) do |reporter|
         @configuration.with_suite_hooks do
           iterator.map { |g|
             start = Time.now

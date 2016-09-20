@@ -44,8 +44,8 @@ RSpec.describe TestQueue::Stats do
     stats = TestQueue::Stats.new(@path)
     time = truncated_now
     suites = [
-      TestQueue::Stats::Suite.new("Suite1", 0.3, time),
-      TestQueue::Stats::Suite.new("Suite2", 0.5, time + 5),
+      TestQueue::Stats::Suite.new("Suite1", "foo.rb", 0.3, time),
+      TestQueue::Stats::Suite.new("Suite2", "bar.rb", 0.5, time + 5),
     ]
     stats.record_suites(suites)
     stats.save
@@ -58,9 +58,9 @@ RSpec.describe TestQueue::Stats do
     stats = TestQueue::Stats.new(@path)
     time = truncated_now
     suites = [
-      TestQueue::Stats::Suite.new("Suite1", 0.3, time),
-      TestQueue::Stats::Suite.new("Suite2", 0.5, time - (8 * 24 * 60 * 60) - 2),
-      TestQueue::Stats::Suite.new("Suite3", 0.6, time - (7 * 24 * 60 * 60)),
+      TestQueue::Stats::Suite.new("Suite1", "foo.rb", 0.3, time),
+      TestQueue::Stats::Suite.new("Suite2", "bar.rb", 0.5, time - (8 * 24 * 60 * 60) - 2),
+      TestQueue::Stats::Suite.new("Suite3", "baz.rb", 0.6, time - (7 * 24 * 60 * 60)),
     ]
     stats.record_suites(suites)
     stats.save

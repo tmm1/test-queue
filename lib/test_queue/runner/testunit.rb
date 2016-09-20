@@ -36,12 +36,14 @@ module TestQueue
   class Runner
     class TestUnit < Runner
       def initialize
-        @suite = Test::Unit::Collector::Descendant.new.collect
-        tests = @suite.tests.sort_by{ |s| -(stats.suite_duration(s.to_s) || 0) }
-        super(tests)
+        if Test::Unit::Collector::Descendant.new.collect.tests.any?
+          fail "Do not `require` test files. Pass them via ARGV instead and they will be required as needed."
+        end
+        super(TestFramework::TestUnit.new)
       end
 
       def run_worker(iterator)
+        @suite = Test::Unit::TestSuite.new("specified by test-queue master")
         @suite.iterator = iterator
         res = Test::Unit::UI::Console::TestRunner.new(@suite).start
         res.run_count - res.pass_count
@@ -50,6 +52,22 @@ module TestQueue
       def summarize_worker(worker)
         worker.summary = worker.output.split("\n").grep(/^\d+ tests?/).first
         worker.failure_output = worker.output.scan(/^Failure:\n(.*)\n=======================*/m).join("\n")
+      end
+    end
+  end
+
+  class TestFramework
+    class TestUnit < TestFramework
+      def all_suite_files
+        ARGV
+      end
+
+      def suites_from_file(path)
+        Test::Unit::TestCase::DESCENDANTS.clear
+        require File.absolute_path(path)
+        Test::Unit::Collector::Descendant.new.collect.tests.map { |suite|
+          [suite.name, suite]
+        }
       end
     end
   end

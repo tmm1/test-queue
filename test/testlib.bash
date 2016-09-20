@@ -34,6 +34,16 @@ assert_status() {
   return 0
 }
 
+refute_status() {
+  expected=$1
+  [ "$status" -ne "$expected" ] || {
+    echo "Expected status not to be $expected. Full output:"
+    echo "$output"
+    return 1
+  }
+  return 0
+}
+
 assert_output_contains() {
   echo "$output" | fgrep --quiet "$@" || {
     echo "Expected to find \"$@\" in:"

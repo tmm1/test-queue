@@ -1,13 +1,13 @@
 module TestQueue
   class Iterator
-    attr_reader :suites, :sock
+    attr_reader :sock
 
-    def initialize(sock, suites, filter=nil, early_failure_limit: nil)
+    def initialize(test_framework, sock, filter=nil, early_failure_limit: nil)
+      @test_framework = test_framework
       @done = false
       @suite_stats = []
       @procline = $0
       @sock = sock
-      @suites = suites
       @filter = filter
       if @sock =~ /^(.+):(\d+)$/
         @tcp_address = $1
@@ -38,7 +38,16 @@ module TestQueue
           client.close
           item = Marshal.load(data)
           break if item.nil? || item.empty?
-          suite = @suites[item]
+          if item == "WAIT"
+            $0 = "#{@procline} - Waiting for work"
+            sleep 0.1
+            next
+          end
+          suite_name, path = item
+          suite = load_suite(suite_name, path)
+
+          # Maybe we were told to load a suite that doesn't exist anymore.
+          next unless suite
 
           $0 = "#{@procline} - #{suite.respond_to?(:description) ? suite.description : suite}"
           start = Time.now
@@ -47,8 +56,7 @@ module TestQueue
           else
             yield suite
           end
-          key = suite.respond_to?(:id) ? suite.id : suite.to_s
-          @suite_stats << TestQueue::Stats::Suite.new(key, Time.now - start, Time.now)
+          @suite_stats << TestQueue::Stats::Suite.new(suite_name, path, Time.now - start, Time.now)
           @failures += suite.failure_count if suite.respond_to? :failure_count
         else
           break
@@ -79,6 +87,17 @@ module TestQueue
 
     def empty?
       false
+    end
+
+    def load_suite(suite_name, path)
+      @loaded_suites ||= {}
+      suite = @loaded_suites[suite_name]
+      return suite if suite
+
+      @test_framework.suites_from_file(path).each do |name, suite|
+        @loaded_suites[name] = suite
+      end
+      @loaded_suites[suite_name]
     end
   end
 end

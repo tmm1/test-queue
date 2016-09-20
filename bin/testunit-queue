@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
 require 'test_queue'
 require 'test_queue/runner/testunit'
-ARGV.each{ |f| require(File.absolute_path(f)) }
 TestQueue::Runner::TestUnit.new.execute
