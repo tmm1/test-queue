@@ -189,7 +189,7 @@ module TestQueue
     ensure
       stop_master
 
-      kill_workers
+      kill_subprocesses
     end
 
     def start_master
@@ -380,7 +380,7 @@ module TestQueue
       until !discovering_suites? && @queue.empty? && remote_workers == 0
         queue_status(@start_time, @queue.size, @workers.size, remote_workers)
 
-        if status = reap_suite_discovery_process
+        if status = reap_suite_discovery_process(false)
           abort("Discovering suites failed.") unless status.success?
         end
 
@@ -466,6 +466,11 @@ module TestQueue
       sock.close if sock
     end
 
+    def kill_subprocesses
+      kill_workers
+      kill_suite_discovery_process
+    end
+
     def kill_workers
       @workers.each do |pid, worker|
         Process.kill 'KILL', pid
@@ -474,9 +479,15 @@ module TestQueue
       reap_workers
     end
 
-    def reap_suite_discovery_process
+    def kill_suite_discovery_process
       return unless @discovering_suites_pid
-      _, status = Process.waitpid2(@discovering_suites_pid, Process::WNOHANG)
+      Process.kill 'KILL', @discovering_suites_pid
+      reap_suite_discovery_process
+    end
+
+    def reap_suite_discovery_process(blocking=true)
+      return unless @discovering_suites_pid
+      _, status = Process.waitpid2(@discovering_suites_pid, blocking ? 0 : Process::WNOHANG)
       return unless status
 
       @discovering_suites_pid = nil
@@ -490,7 +501,7 @@ module TestQueue
     # Doesn't return.
     def abort(message)
       @aborting = true
-      kill_workers
+      kill_subprocesses
       Kernel::abort("Aborting: #{message}")
     end
 
