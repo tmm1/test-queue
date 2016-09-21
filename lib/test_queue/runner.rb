@@ -45,7 +45,12 @@ module TestQueue
 
       @procline = $0
 
-      @whitelist = Set.new
+      @whitelist = if forced = ENV['TEST_QUEUE_FORCE']
+                     forced.split(/\s*,\s*/)
+                   else
+                     []
+                   end
+      @whitelist.freeze
 
       all_files = @test_framework.all_suite_files.to_set
       @queue = @stats.all_suites
@@ -53,14 +58,11 @@ module TestQueue
         .sort_by { |suite| -suite.duration }
         .map { |suite| [suite.name, suite.path] }
 
-      if forced = ENV['TEST_QUEUE_FORCE']
-        forced = forced.split(/\s*,\s*/)
-        @whitelist.merge(forced)
+      if @whitelist.any?
         @queue.select! { |suite_name, path| @whitelist.include?(suite_name) }
-        @queue.sort_by! { |suite_name, path| forced.index(suite_name) }
+        @queue.sort_by! { |suite_name, path| @whitelist.index(suite_name) }
       end
 
-      @whitelist.freeze
       @original_queue = Set.new(@queue).freeze
 
       @workers = {}
