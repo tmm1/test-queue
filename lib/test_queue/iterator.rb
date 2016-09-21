@@ -6,7 +6,6 @@ module TestQueue
       @test_framework = test_framework
       @done = false
       @suite_stats = []
-      @procline = $0
       @sock = sock
       @filter = filter
       if @sock =~ /^(.+):(\d+)$/
@@ -19,6 +18,8 @@ module TestQueue
 
     def each
       fail "already used this iterator. previous caller: #@done" if @done
+
+      procline = $0
 
       while true
         # If we've hit too many failures in one worker, assume the entire
@@ -39,7 +40,7 @@ module TestQueue
           item = Marshal.load(data)
           break if item.nil? || item.empty?
           if item == "WAIT"
-            $0 = "#{@procline} - Waiting for work"
+            $0 = "#{procline} - Waiting for work"
             sleep 0.1
             next
           end
@@ -49,7 +50,7 @@ module TestQueue
           # Maybe we were told to load a suite that doesn't exist anymore.
           next unless suite
 
-          $0 = "#{@procline} - #{suite.respond_to?(:description) ? suite.description : suite}"
+          $0 = "#{procline} - #{suite.respond_to?(:description) ? suite.description : suite}"
           start = Time.now
           if @filter
             @filter.call(suite){ yield suite }
@@ -64,6 +65,7 @@ module TestQueue
       end
     rescue Errno::ENOENT, Errno::ECONNRESET, Errno::ECONNREFUSED
     ensure
+      $0 = procline
       @done = caller.first
       File.open("/tmp/test_queue_worker_#{$$}_suites", "wb") do |f|
         Marshal.dump(@suite_stats, f)
