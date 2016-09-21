@@ -257,7 +257,14 @@ module TestQueue
     end
 
     def discover_suites
+      # Remote masters don't discover suites; the central master does and
+      # distributes them to remote masters.
       return if relay?
+
+      # No need to discover suites if all whitelisted suites are already
+      # queued.
+      return if @whitelist.any? && @awaited_suites.empty?
+
       @discovering_suites_pid = fork do
         terminate = false
         Signal.trap("INT") { terminate = true }
