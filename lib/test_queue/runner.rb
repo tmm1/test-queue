@@ -45,7 +45,12 @@ module TestQueue
 
       @procline = $0
 
-      @whitelist = Set.new
+      @whitelist = if forced = ENV['TEST_QUEUE_FORCE']
+                     forced.split(/\s*,\s*/)
+                   else
+                     []
+                   end
+      @whitelist.freeze
 
       all_files = @test_framework.all_suite_files.to_set
       @queue = @stats.all_suites
@@ -53,14 +58,12 @@ module TestQueue
         .sort_by { |suite| -suite.duration }
         .map { |suite| [suite.name, suite.path] }
 
-      if forced = ENV['TEST_QUEUE_FORCE']
-        forced = forced.split(/\s*,\s*/)
-        @whitelist.merge(forced)
+      if @whitelist.any?
         @queue.select! { |suite_name, path| @whitelist.include?(suite_name) }
-        @queue.sort_by! { |suite_name, path| forced.index(suite_name) }
+        @queue.sort_by! { |suite_name, path| @whitelist.index(suite_name) }
       end
 
-      @whitelist.freeze
+      @awaited_suites = Set.new(@whitelist - @queue.map(&:first))
       @original_queue = Set.new(@queue).freeze
 
       @workers = {}
@@ -187,7 +190,7 @@ module TestQueue
     ensure
       stop_master
 
-      kill_workers
+      kill_subprocesses
     end
 
     def start_master
@@ -254,10 +257,24 @@ module TestQueue
     end
 
     def discover_suites
+      # Remote masters don't discover suites; the central master does and
+      # distributes them to remote masters.
       return if relay?
+
+      # No need to discover suites if all whitelisted suites are already
+      # queued.
+      return if @whitelist.any? && @awaited_suites.empty?
+
       @discovering_suites_pid = fork do
+        terminate = false
+        Signal.trap("INT") { terminate = true }
+
+        $0 = "test-queue suite discovery process"
+
         @test_framework.all_suite_files.each do |path|
           @test_framework.suites_from_file(path).each do |suite_name, suite|
+            Kernel.exit!(0) if terminate
+
             @server.connect_address.connect do |sock|
               sock.puts("NEW SUITE #{Marshal.dump([suite_name, path])}")
             end
@@ -265,6 +282,21 @@ module TestQueue
         end
 
         Kernel.exit! 0
+      end
+    end
+
+    def awaiting_suites?
+      case
+      when @awaited_suites.any?
+        # We're waiting to find all the whitelisted suites so we can run them
+        # in the correct order.
+        true
+      when @queue.empty? && !!@discovering_suites_pid
+        # We don't have any suites yet, but we're working on it.
+        true
+      else
+        # It's fine to run any queued suites now.
+        false
       end
     end
 
@@ -282,6 +314,14 @@ module TestQueue
       # the front of the queue. It's better to run a fast suite early than to
       # run a slow suite late.
       @queue.unshift [suite_name, path]
+
+      if @awaited_suites.delete?(suite_name) && @awaited_suites.empty?
+        # We've found all the whitelisted suites. Sort the queue to match the
+        # whitelist.
+        @queue.sort_by! { |suite_name, path| @whitelist.index(suite_name) }
+
+        kill_suite_discovery_process("INT")
+      end
     end
 
     def after_fork_internal(num, iterator)
@@ -371,13 +411,12 @@ module TestQueue
       return if relay?
       remote_workers = 0
 
-      until @discovering_suites_pid.nil? && @queue.empty? && remote_workers == 0
+      until !awaiting_suites? && @queue.empty? && remote_workers == 0
         queue_status(@start_time, @queue.size, @workers.size, remote_workers)
 
-        # Make sure our discovery process is still doing OK.
-        if @discovering_suites_pid && Process.waitpid(@discovering_suites_pid, Process::WNOHANG) != nil
-          @discovering_suites_pid = nil
-          abort("Discovering suites failed.") unless $?.success?
+        if status = reap_suite_discovery_process(false)
+          abort("Discovering suites failed.") unless status.success?
+          abort("Failed to discover #{@awaited_suites.sort.join(", ")} specified in TEST_QUEUE_FORCE") if @awaited_suites.any?
         end
 
         if IO.select([@server], nil, nil, 0.1).nil?
@@ -388,11 +427,11 @@ module TestQueue
           case cmd
           when /^POP/
             # If we have a slave from a different test run, don't respond, and it will consider the test run done.
-            if obj = @queue.shift
+            if awaiting_suites?
+              sock.write(Marshal.dump("WAIT"))
+            elsif obj = @queue.shift
               data = Marshal.dump(obj)
               sock.write(data)
-            elsif @discovering_suites_pid
-              sock.write(Marshal.dump("WAIT"))
             end
           when /^SLAVE (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
             num = $1.to_i
@@ -462,12 +501,32 @@ module TestQueue
       sock.close if sock
     end
 
+    def kill_subprocesses
+      kill_workers
+      kill_suite_discovery_process
+    end
+
     def kill_workers
       @workers.each do |pid, worker|
         Process.kill 'KILL', pid
       end
 
       reap_workers
+    end
+
+    def kill_suite_discovery_process(signal="KILL")
+      return unless @discovering_suites_pid
+      Process.kill signal, @discovering_suites_pid
+      reap_suite_discovery_process
+    end
+
+    def reap_suite_discovery_process(blocking=true)
+      return unless @discovering_suites_pid
+      _, status = Process.waitpid2(@discovering_suites_pid, blocking ? 0 : Process::WNOHANG)
+      return unless status
+
+      @discovering_suites_pid = nil
+      status
     end
 
     # Stop the test run immediately.
@@ -477,7 +536,7 @@ module TestQueue
     # Doesn't return.
     def abort(message)
       @aborting = true
-      kill_workers
+      kill_subprocesses
       Kernel::abort("Aborting: #{message}")
     end
 

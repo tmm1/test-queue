@@ -37,6 +37,43 @@ teardown() {
   refute_output_contains "MiniTestSleep9"
 }
 
+assert_test_queue_force_ordering() {
+  run bundle exec minitest-queue "$@"
+  assert_status 0
+  assert_output_contains "Starting test-queue master"
+
+  # Turn the list of suites that were run into a comma-separated list. Input
+  # looks like:
+  #     SuiteName: .  <0.001>
+  actual_tests=$(echo "$output" | \
+                 egrep '^    .*: \.+  <' | \
+                 sed -E -e 's/^    (.*): \.+.*/\1/' | \
+                 tr '\n' ',' | \
+                 sed -e 's/,$//')
+  assert_equal "$TEST_QUEUE_FORCE" "$actual_tests"
+}
+
+@test "TEST_QUEUE_FORCE ensures test ordering" {
+  export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="Meme::when asked about cheeseburgers,MiniTestEqual"
+
+  # Without stats file
+  rm -f .test_queue_stats
+  assert_test_queue_force_ordering ./test/samples/sample_minitest5.rb ./test/samples/sample_minispec.rb
+  rm -f .test_queue_stats
+  assert_test_queue_force_ordering ./test/samples/sample_minispec.rb ./test/samples/sample_minitest5.rb
+
+  # With stats file
+  assert_test_queue_force_ordering ./test/samples/sample_minitest5.rb ./test/samples/sample_minispec.rb
+  assert_test_queue_force_ordering ./test/samples/sample_minispec.rb ./test/samples/sample_minitest5.rb
+}
+
+@test "minitest-queue fails if TEST_QUEUE_FORCE specifies nonexistent tests" {
+  export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep21,DoesNotExist"
+  run bundle exec minitest-queue ./test/samples/*_minitest5.rb
+  assert_status 1
+  assert_output_contains "Failed to discover DoesNotExist specified in TEST_QUEUE_FORCE"
+}
+
 @test "multi-master succeeds when all tests pass" {
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
   TEST_QUEUE_RELAY=0.0.0.0:12345 bundle exec minitest-queue ./test/samples/sample_minitest5.rb || true &

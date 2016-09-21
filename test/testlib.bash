@@ -79,3 +79,11 @@ refute_output_matches() {
   }
   return 0
 }
+
+assert_equal() {
+  [ "$1" = "$2" ] || {
+    echo "Expected \"$1\" to equal \"$2\""
+    return 1
+  }
+  return 0
+}
