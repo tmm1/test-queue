@@ -259,8 +259,13 @@ module TestQueue
     def discover_suites
       return if relay?
       @discovering_suites_pid = fork do
+        terminate = false
+        Signal.trap("INT") { terminate = true }
+
         @test_framework.all_suite_files.each do |path|
           @test_framework.suites_from_file(path).each do |suite_name, suite|
+            Kernel.exit!(0) if terminate
+
             @server.connect_address.connect do |sock|
               sock.puts("NEW SUITE #{Marshal.dump([suite_name, path])}")
             end
@@ -305,6 +310,8 @@ module TestQueue
         # We've found all the whitelisted suites. Sort the queue to match the
         # whitelist.
         @queue.sort_by! { |suite_name, path| @whitelist.index(suite_name) }
+
+        kill_suite_discovery_process("INT")
       end
     end
 
@@ -498,9 +505,9 @@ module TestQueue
       reap_workers
     end
 
-    def kill_suite_discovery_process
+    def kill_suite_discovery_process(signal="KILL")
       return unless @discovering_suites_pid
-      Process.kill 'KILL', @discovering_suites_pid
+      Process.kill signal, @discovering_suites_pid
       reap_suite_discovery_process
     end
 
