@@ -67,6 +67,13 @@ assert_test_queue_force_ordering() {
   assert_test_queue_force_ordering ./test/samples/sample_minispec.rb ./test/samples/sample_minitest5.rb
 }
 
+@test "minitest-queue fails if TEST_QUEUE_FORCE specifies nonexistent tests" {
+  export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep21,DoesNotExist"
+  run bundle exec minitest-queue ./test/samples/*_minitest5.rb
+  assert_status 1
+  assert_output_contains "Failed to discover DoesNotExist specified in TEST_QUEUE_FORCE"
+}
+
 @test "multi-master succeeds when all tests pass" {
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
   TEST_QUEUE_RELAY=0.0.0.0:12345 bundle exec minitest-queue ./test/samples/sample_minitest5.rb || true &

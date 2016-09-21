@@ -63,6 +63,7 @@ module TestQueue
         @queue.sort_by! { |suite_name, path| @whitelist.index(suite_name) }
       end
 
+      @awaited_suites = Set.new(@whitelist - @queue.map(&:first))
       @original_queue = Set.new(@queue).freeze
 
       @workers = {}
@@ -270,8 +271,19 @@ module TestQueue
       end
     end
 
-    def discovering_suites?
-      !!@discovering_suites_pid
+    def awaiting_suites?
+      case
+      when @awaited_suites.any?
+        # We're waiting to find all the whitelisted suites so we can run them
+        # in the correct order.
+        true
+      when @queue.empty? && !!@discovering_suites_pid
+        # We don't have any suites yet, but we're working on it.
+        true
+      else
+        # It's fine to run any queued suites now.
+        false
+      end
     end
 
     def enqueue_discovered_suite(suite_name, path)
@@ -288,6 +300,12 @@ module TestQueue
       # the front of the queue. It's better to run a fast suite early than to
       # run a slow suite late.
       @queue.unshift [suite_name, path]
+
+      if @awaited_suites.delete?(suite_name) && @awaited_suites.empty?
+        # We've found all the whitelisted suites. Sort the queue to match the
+        # whitelist.
+        @queue.sort_by! { |suite_name, path| @whitelist.index(suite_name) }
+      end
     end
 
     def after_fork_internal(num, iterator)
@@ -377,11 +395,12 @@ module TestQueue
       return if relay?
       remote_workers = 0
 
-      until !discovering_suites? && @queue.empty? && remote_workers == 0
+      until !awaiting_suites? && @queue.empty? && remote_workers == 0
         queue_status(@start_time, @queue.size, @workers.size, remote_workers)
 
         if status = reap_suite_discovery_process(false)
           abort("Discovering suites failed.") unless status.success?
+          abort("Failed to discover #{@awaited_suites.sort.join(", ")} specified in TEST_QUEUE_FORCE") if @awaited_suites.any?
         end
 
         if IO.select([@server], nil, nil, 0.1).nil?
@@ -392,11 +411,11 @@ module TestQueue
           case cmd
           when /^POP/
             # If we have a slave from a different test run, don't respond, and it will consider the test run done.
-            if obj = @queue.shift
+            if awaiting_suites?
+              sock.write(Marshal.dump("WAIT"))
+            elsif obj = @queue.shift
               data = Marshal.dump(obj)
               sock.write(data)
-            elsif discovering_suites?
-              sock.write(Marshal.dump("WAIT"))
             end
           when /^SLAVE (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
             num = $1.to_i
