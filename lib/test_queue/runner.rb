@@ -380,10 +380,8 @@ module TestQueue
       until !discovering_suites? && @queue.empty? && remote_workers == 0
         queue_status(@start_time, @queue.size, @workers.size, remote_workers)
 
-        # Make sure our discovery process is still doing OK.
-        if @discovering_suites_pid && Process.waitpid(@discovering_suites_pid, Process::WNOHANG) != nil
-          @discovering_suites_pid = nil
-          abort("Discovering suites failed.") unless $?.success?
+        if status = reap_suite_discovery_process
+          abort("Discovering suites failed.") unless status.success?
         end
 
         if IO.select([@server], nil, nil, 0.1).nil?
@@ -474,6 +472,15 @@ module TestQueue
       end
 
       reap_workers
+    end
+
+    def reap_suite_discovery_process
+      return unless @discovering_suites_pid
+      _, status = Process.waitpid2(@discovering_suites_pid, Process::WNOHANG)
+      return unless status
+
+      @discovering_suites_pid = nil
+      status
     end
 
     # Stop the test run immediately.
