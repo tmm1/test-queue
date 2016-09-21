@@ -262,6 +262,8 @@ module TestQueue
         terminate = false
         Signal.trap("INT") { terminate = true }
 
+        $0 = "test-queue suite discovery process"
+
         @test_framework.all_suite_files.each do |path|
           @test_framework.suites_from_file(path).each do |suite_name, suite|
             Kernel.exit!(0) if terminate
