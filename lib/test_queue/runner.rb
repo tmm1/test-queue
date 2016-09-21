@@ -270,6 +270,10 @@ module TestQueue
       end
     end
 
+    def discovering_suites?
+      !!@discovering_suites_pid
+    end
+
     def enqueue_discovered_suite(suite_name, path)
       if @whitelist.any? && !@whitelist.include?(suite_name)
         return
@@ -373,7 +377,7 @@ module TestQueue
       return if relay?
       remote_workers = 0
 
-      until @discovering_suites_pid.nil? && @queue.empty? && remote_workers == 0
+      until !discovering_suites? && @queue.empty? && remote_workers == 0
         queue_status(@start_time, @queue.size, @workers.size, remote_workers)
 
         # Make sure our discovery process is still doing OK.
@@ -393,7 +397,7 @@ module TestQueue
             if obj = @queue.shift
               data = Marshal.dump(obj)
               sock.write(data)
-            elsif @discovering_suites_pid
+            elsif discovering_suites?
               sock.write(Marshal.dump("WAIT"))
             end
           when /^SLAVE (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
