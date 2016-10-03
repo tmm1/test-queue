@@ -46,7 +46,7 @@ module TestQueue
       end
 
       def suites_from_file(path)
-        ::RSpec.world.reset
+        ::RSpec.world.example_groups.clear
         load path
         split_groups(::RSpec.world.example_groups).map { |example_or_group|
           name = if example_or_group.respond_to?(:id)
