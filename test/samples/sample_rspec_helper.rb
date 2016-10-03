@@ -1,0 +1,1 @@
+require_relative 'sample_shared_examples_for_spec'
