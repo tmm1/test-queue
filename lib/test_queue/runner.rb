@@ -72,7 +72,7 @@ module TestQueue
       @concurrency =
         concurrency ||
         (ENV['TEST_QUEUE_WORKERS'] && ENV['TEST_QUEUE_WORKERS'].to_i) ||
-        if File.exists?('/proc/cpuinfo')
+        if File.exist?('/proc/cpuinfo')
           File.read('/proc/cpuinfo').split("\n").grep(/processor/).size
         elsif RUBY_PLATFORM =~ /darwin/
           `/usr/sbin/sysctl -n hw.activecpu`.to_i
@@ -201,7 +201,7 @@ module TestQueue
           @socket = "#$1:#$2"
           @server = TCPServer.new(address, port)
         else
-          FileUtils.rm(@socket) if File.exists?(@socket)
+          FileUtils.rm(@socket) if File.exist?(@socket)
           @server = UNIXServer.new(@socket)
         end
       end
@@ -393,12 +393,12 @@ module TestQueue
     end
 
     def collect_worker_data(worker)
-      if File.exists?(file = "/tmp/test_queue_worker_#{worker.pid}_output")
+      if File.exist?(file = "/tmp/test_queue_worker_#{worker.pid}_output")
         worker.output = IO.binread(file)
         FileUtils.rm(file)
       end
 
-      if File.exists?(file = "/tmp/test_queue_worker_#{worker.pid}_suites")
+      if File.exist?(file = "/tmp/test_queue_worker_#{worker.pid}_suites")
         worker.suites.replace(Marshal.load(IO.binread(file)))
         FileUtils.rm(file)
       end
