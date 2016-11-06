@@ -108,6 +108,8 @@ module TestQueue
       end
 
       @exit_when_done = true
+
+      @aborting = false
     end
 
     # Run the tests.
