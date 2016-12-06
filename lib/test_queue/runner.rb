@@ -31,7 +31,7 @@ module TestQueue
     attr_accessor :concurrency, :exit_when_done
     attr_reader :stats
 
-    TOKEN_REGEX = /^TOKEN=(\w+)/
+    TOKEN_REGEX = /^TOKEN=(\w+) /
 
     def initialize(test_framework, concurrency=nil, socket=nil, relay=nil)
       @test_framework = test_framework
@@ -445,7 +445,7 @@ module TestQueue
             next
           end
 
-          cmd = cmd.gsub(TOKEN_REGEX, "").strip
+          cmd = cmd.gsub(TOKEN_REGEX, "")
 
           case cmd
           when /^POP/
