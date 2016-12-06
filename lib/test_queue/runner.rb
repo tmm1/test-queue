@@ -31,6 +31,8 @@ module TestQueue
     attr_accessor :concurrency, :exit_when_done
     attr_reader :stats
 
+    TOKEN_REGEX = /^TOKEN=(\w+)/
+
     def initialize(test_framework, concurrency=nil, socket=nil, relay=nil)
       @test_framework = test_framework
       @stats = Stats.new(stats_file)
@@ -428,9 +430,9 @@ module TestQueue
           sock = @server.accept
           cmd = sock.gets.strip
 
-          cmd =~ /^TOKEN=(\w+)/
+          token = cmd[TOKEN_REGEX, 1]
           # If we have a slave from a different test run, don't respond, and it will consider the test run done.
-          case $1
+          case token
           # No special handling if the token is valid
           when @run_token
           when nil
