@@ -432,15 +432,9 @@ module TestQueue
 
           token = cmd[TOKEN_REGEX, 1]
           # If we have a slave from a different test run, respond with "WRONG RUN", and it will consider the test run done.
-          case token
-          # No special handling if the token is valid
-          when @run_token
-          when nil
-            STDERR.puts "*** Worker sent no token to master for run #{@run_token}; ignoring."
-            sock.write("WRONG RUN\n")
-            next
-          else
-            STDERR.puts "*** Worker from run #{run_token} connected to master for run #{@run_token}; ignoring."
+          if token != @run_token
+            message = token.nil? ? "Worker sent no token to master" : "Worker from run #{run_token} connected to master"
+            STDERR.puts "*** #{message} for run #{@run_token}; ignoring."
             sock.write("WRONG RUN\n")
             next
           end
