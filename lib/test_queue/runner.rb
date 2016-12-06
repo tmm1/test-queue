@@ -438,12 +438,10 @@ module TestQueue
           when nil
             STDERR.puts "*** Worker sent no token to master for run #{@run_token}; ignoring."
             sock.write("WRONG RUN\n")
-            File.open("/tmp/errors.log", "a") {|f| f.puts "WRONG RUN - nil token"}
             next
           else
             STDERR.puts "*** Worker from run #{run_token} connected to master for run #{@run_token}; ignoring."
             sock.write("WRONG RUN\n")
-            File.open("/tmp/errors.log", "a") {|f| f.puts "WRONG RUN - wrong token"}
             next
           end
 
