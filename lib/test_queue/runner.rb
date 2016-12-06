@@ -217,7 +217,7 @@ module TestQueue
       sock = connect_to_relay
       message = @slave_message ? " #{@slave_message}" : ""
       message.gsub!(/(\r|\n)/, "") # Our "protocol" is newline-separated
-      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{@run_token}#{message}")
+      sock.puts("TOKEN=#{@run_token} SLAVE #{@concurrency} #{Socket.gethostname} #{message}")
       response = sock.gets.strip
       unless response == "OK"
         STDERR.puts "*** Got non-OK response from master: #{response}"
@@ -245,7 +245,7 @@ module TestQueue
         pid = fork do
           @server.close if @server
 
-          iterator = Iterator.new(@test_framework, relay?? @relay : @socket, method(:around_filter), early_failure_limit: @early_failure_limit)
+          iterator = Iterator.new(@test_framework, relay?? @relay : @socket, method(:around_filter), early_failure_limit: @early_failure_limit, run_token: @run_token)
           after_fork_internal(num, iterator)
           ret = run_worker(iterator) || 0
           cleanup_worker
@@ -276,7 +276,7 @@ module TestQueue
             Kernel.exit!(0) if terminate
 
             @server.connect_address.connect do |sock|
-              sock.puts("NEW SUITE #{Marshal.dump([suite_name, path])}")
+              sock.puts("TOKEN=#{@run_token} NEW SUITE #{Marshal.dump([suite_name, path])}")
             end
           end
         end
@@ -427,8 +427,26 @@ module TestQueue
         else
           sock = @server.accept
           cmd = sock.gets.strip
+
+          cmd =~ /^TOKEN=(\w+)/
+          # If we have a slave from a different test run, don't respond, and it will consider the test run done.
+          case $1
+          # No special handling if the token is valid
+          when @run_token
+          when nil
+            STDERR.puts "*** Worker sent no token to master for run #{@run_token}; ignoring."
+            sock.write("WRONG RUN\n")
+            File.open("/tmp/errors.log", "a") {|f| f.puts "WRONG RUN - nil token"}
+            next
+          else
+            STDERR.puts "*** Worker from run #{run_token} connected to master for run #{@run_token}; ignoring."
+            sock.write("WRONG RUN\n")
+            File.open("/tmp/errors.log", "a") {|f| f.puts "WRONG RUN - wrong token"}
+            next
+          end
+
           case cmd
-          when /^POP/
+          when /^TOKEN=\w+ POP/
             # If we have a slave from a different test run, don't respond, and it will consider the test run done.
             if awaiting_suites?
               sock.write(Marshal.dump("WAIT"))
@@ -436,31 +454,26 @@ module TestQueue
               data = Marshal.dump(obj)
               sock.write(data)
             end
-          when /^SLAVE (\d+) ([\w\.-]+) (\w+)(?: (.+))?/
+          when /^TOKEN=\w+ SLAVE (\d+) ([\w\.-]+) (?: (.+))?/
             num = $1.to_i
             slave = $2
-            run_token = $3
-            slave_message = $4
-            if run_token == @run_token
-              # If we have a slave from a different test run, don't respond, and it will consider the test run done.
-              sock.write("OK\n")
-              remote_workers += num
-            else
-              STDERR.puts "*** Worker from run #{run_token} connected to master for run #{@run_token}; ignoring."
-              sock.write("WRONG RUN\n")
-            end
+            slave_message = $3
+
+            sock.write("OK\n")
+            remote_workers += num
+
             message = "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
             message << " " + slave_message if slave_message
             STDERR.puts message
-          when /^WORKER (\d+)/
+          when /^TOKEN=\w+ WORKER (\d+)/
             data = sock.read($1.to_i)
             worker = Marshal.load(data)
             worker_completed(worker)
             remote_workers -= 1
-          when /^NEW SUITE (.+)/
+          when /^TOKEN=\w+ NEW SUITE (.+)/
             suite_name, path = Marshal.load($1)
             enqueue_discovered_suite(suite_name, path)
-          when /^KABOOM/
+          when /^TOKEN=\w+ KABOOM/
             # worker reporting an abnormal number of test failures;
             # stop everything immediately and report the results.
             break
@@ -498,7 +511,7 @@ module TestQueue
       data = Marshal.dump(worker)
 
       sock = connect_to_relay
-      sock.puts("WORKER #{data.bytesize}")
+      sock.puts("TOKEN=#{@run_token} WORKER #{data.bytesize}")
       sock.write(data)
     ensure
       sock.close if sock
