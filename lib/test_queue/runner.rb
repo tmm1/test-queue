@@ -431,7 +431,7 @@ module TestQueue
           cmd = sock.gets.strip
 
           token = cmd[TOKEN_REGEX, 1]
-          # If we have a slave from a different test run, don't respond, and it will consider the test run done.
+          # If we have a slave from a different test run, respond with "WRONG RUN", and it will consider the test run done.
           case token
           # No special handling if the token is valid
           when @run_token
