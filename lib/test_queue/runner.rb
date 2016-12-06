@@ -450,7 +450,7 @@ module TestQueue
           cmd = cmd.gsub(TOKEN_REGEX, "").strip
 
           case cmd
-          when /POP/
+          when /^POP/
             # If we have a slave from a different test run, don't respond, and it will consider the test run done.
             if awaiting_suites?
               sock.write(Marshal.dump("WAIT"))
@@ -458,7 +458,7 @@ module TestQueue
               data = Marshal.dump(obj)
               sock.write(data)
             end
-          when /SLAVE (\d+) ([\w\.-]+) (?: (.+))?/
+          when /^SLAVE (\d+) ([\w\.-]+) (?: (.+))?/
             num = $1.to_i
             slave = $2
             slave_message = $3
@@ -469,15 +469,15 @@ module TestQueue
             message = "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
             message << " " + slave_message if slave_message
             STDERR.puts message
-          when /WORKER (\d+)/
+          when /^WORKER (\d+)/
             data = sock.read($1.to_i)
             worker = Marshal.load(data)
             worker_completed(worker)
             remote_workers -= 1
-          when /NEW SUITE (.+)/
+          when /^NEW SUITE (.+)/
             suite_name, path = Marshal.load($1)
             enqueue_discovered_suite(suite_name, path)
-          when /KABOOM/
+          when /^KABOOM/
             # worker reporting an abnormal number of test failures;
             # stop everything immediately and report the results.
             break
