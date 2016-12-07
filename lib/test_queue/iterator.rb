@@ -80,7 +80,8 @@ module TestQueue
         else
           UNIXSocket.new(@sock)
         end
-      sock.puts("TOKEN=#{@run_token} #{cmd}")
+      sock.puts("TOKEN=#{@run_token}")
+      sock.puts(cmd)
       sock
     rescue Errno::EPIPE
       nil

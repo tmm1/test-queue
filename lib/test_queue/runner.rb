@@ -31,7 +31,7 @@ module TestQueue
     attr_accessor :concurrency, :exit_when_done
     attr_reader :stats
 
-    TOKEN_REGEX = /^TOKEN=(\w+) /
+    TOKEN_REGEX = /^TOKEN=(\w+)/
 
     def initialize(test_framework, concurrency=nil, socket=nil, relay=nil)
       @test_framework = test_framework
@@ -219,7 +219,8 @@ module TestQueue
       sock = connect_to_relay
       message = @slave_message ? " #{@slave_message}" : ""
       message.gsub!(/(\r|\n)/, "") # Our "protocol" is newline-separated
-      sock.puts("TOKEN=#{@run_token} SLAVE #{@concurrency} #{Socket.gethostname} #{message}")
+      sock.puts("TOKEN=#{@run_token}")
+      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{message}")
       response = sock.gets.strip
       unless response == "OK"
         STDERR.puts "*** Got non-OK response from master: #{response}"
@@ -278,7 +279,8 @@ module TestQueue
             Kernel.exit!(0) if terminate
 
             @server.connect_address.connect do |sock|
-              sock.puts("TOKEN=#{@run_token} NEW SUITE #{Marshal.dump([suite_name, path])}")
+              sock.puts("TOKEN=#{@run_token}")
+              sock.puts("NEW SUITE #{Marshal.dump([suite_name, path])}")
             end
           end
         end
@@ -428,9 +430,10 @@ module TestQueue
           reap_workers(false) # check for worker deaths
         else
           sock = @server.accept
+          token = sock.gets.strip
           cmd = sock.gets.strip
 
-          token = cmd[TOKEN_REGEX, 1]
+          token = token[TOKEN_REGEX, 1]
           # If we have a slave from a different test run, respond with "WRONG RUN", and it will consider the test run done.
           if token != @run_token
             message = token.nil? ? "Worker sent no token to master" : "Worker from run #{run_token} connected to master"
@@ -438,8 +441,6 @@ module TestQueue
             sock.write("WRONG RUN\n")
             next
           end
-
-          cmd = cmd.gsub(TOKEN_REGEX, "")
 
           case cmd
           when /^POP/
@@ -507,7 +508,8 @@ module TestQueue
       data = Marshal.dump(worker)
 
       sock = connect_to_relay
-      sock.puts("TOKEN=#{@run_token} WORKER #{data.bytesize}")
+      sock.puts("TOKEN=#{@run_token}")
+      sock.puts("WORKER #{data.bytesize}")
       sock.write(data)
     ensure
       sock.close if sock
