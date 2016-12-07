@@ -436,7 +436,7 @@ module TestQueue
           token = token[TOKEN_REGEX, 1]
           # If we have a slave from a different test run, respond with "WRONG RUN", and it will consider the test run done.
           if token != @run_token
-            message = token.nil? ? "Worker sent no token to master" : "Worker from run #{run_token} connected to master"
+            message = token.nil? ? "Worker sent no token to master" : "Worker from run #{token} connected to master"
             STDERR.puts "*** #{message} for run #{@run_token}; ignoring."
             sock.write("WRONG RUN\n")
             next
