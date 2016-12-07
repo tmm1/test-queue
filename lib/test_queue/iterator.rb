@@ -2,7 +2,7 @@ module TestQueue
   class Iterator
     attr_reader :sock
 
-    def initialize(test_framework, sock, filter=nil, early_failure_limit: nil)
+    def initialize(test_framework, sock, filter=nil, run_token:, early_failure_limit: nil)
       @test_framework = test_framework
       @done = false
       @suite_stats = []
@@ -14,6 +14,7 @@ module TestQueue
       end
       @failures = 0
       @early_failure_limit = early_failure_limit
+      @run_token = run_token
     end
 
     def each
@@ -79,6 +80,7 @@ module TestQueue
         else
           UNIXSocket.new(@sock)
         end
+      sock.puts("TOKEN=#{@run_token}")
       sock.puts(cmd)
       sock
     rescue Errno::EPIPE
