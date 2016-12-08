@@ -451,7 +451,7 @@ module TestQueue
               data = Marshal.dump(obj)
               sock.write(data)
             end
-          when /^SLAVE (\d+) ([\w\.-]+) (?: (.+))?/
+          when /^SLAVE (\d+) ([\w\.-]+)(?: (.+))?/
             num = $1.to_i
             slave = $2
             slave_message = $3
