@@ -474,6 +474,8 @@ module TestQueue
             # worker reporting an abnormal number of test failures;
             # stop everything immediately and report the results.
             break
+          else
+            STDERR.puts("Ignoring unrecognized command: \"#{cmd}\"")
           end
           sock.close
         end
