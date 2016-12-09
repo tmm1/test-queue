@@ -109,6 +109,8 @@ module TestQueue
         @queue = []
       end
 
+      @discovered_suites = Set.new
+
       @exit_when_done = true
     end
 
@@ -136,9 +138,13 @@ module TestQueue
       puts "==> Summary (#{@completed.size} workers in %.4fs)" % (Time.now-@start_time)
       puts
 
+      run_suites = Set.new
       @failures = ''
       @completed.each do |worker|
         @stats.record_suites(worker.suites)
+        worker.suites.each do |suite|
+          run_suites << [suite.name, suite.path]
+        end
 
         summarize_worker(worker)
 
@@ -162,6 +168,26 @@ module TestQueue
         puts @failures
       end
 
+      skipped_suites = @discovered_suites - run_suites
+      unexpected_suites = run_suites - @discovered_suites
+      unless skipped_suites.empty?
+        puts
+        puts "The following suites were discovered but were not run:"
+        puts
+
+        skipped_suites.sort.each do |suite_name, path|
+          puts "#{suite_name} - #{path}"
+        end
+      end
+      unless unexpected_suites.empty?
+        puts
+        puts "The following suites were not discovered but were run anyway:"
+        puts
+        unexpected_suites.sort.each do |suite_name, path|
+          puts "#{suite_name} - #{path}"
+        end
+      end
+
       puts
 
       @stats.save
@@ -169,6 +195,7 @@ module TestQueue
       summarize
 
       estatus = @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
+      estatus += 1 unless skipped_suites.empty? && unexpected_suites.empty?
       estatus = 255 if estatus > 255
       estatus
     end
@@ -311,6 +338,8 @@ module TestQueue
 
       if @original_queue.include?([suite_name, path])
         # This suite was already added to the queue some other way.
+        # We still want to track it in the list of discovered suites though.
+        @discovered_suites << [suite_name, path]
         return
       end
 
@@ -318,6 +347,7 @@ module TestQueue
       # the front of the queue. It's better to run a fast suite early than to
       # run a slow suite late.
       @queue.unshift [suite_name, path]
+      @discovered_suites << [suite_name, path]
 
       if @awaited_suites.delete?(suite_name) && @awaited_suites.empty?
         # We've found all the whitelisted suites. Sort the queue to match the
