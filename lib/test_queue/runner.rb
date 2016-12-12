@@ -168,23 +168,25 @@ module TestQueue
         puts @failures
       end
 
-      skipped_suites = @discovered_suites - run_suites
-      unexpected_suites = run_suites - @discovered_suites
-      unless skipped_suites.empty?
-        puts
-        puts "The following suites were discovered but were not run:"
-        puts
+      if !relay?
+        skipped_suites = @discovered_suites - run_suites
+        unexpected_suites = run_suites - @discovered_suites
+        unless skipped_suites.empty?
+          puts
+          puts "The following suites were discovered but were not run:"
+          puts
 
-        skipped_suites.sort.each do |suite_name, path|
-          puts "#{suite_name} - #{path}"
+          skipped_suites.sort.each do |suite_name, path|
+            puts "#{suite_name} - #{path}"
+          end
         end
-      end
-      unless unexpected_suites.empty?
-        puts
-        puts "The following suites were not discovered but were run anyway:"
-        puts
-        unexpected_suites.sort.each do |suite_name, path|
-          puts "#{suite_name} - #{path}"
+        unless unexpected_suites.empty?
+          puts
+          puts "The following suites were not discovered but were run anyway:"
+          puts
+          unexpected_suites.sort.each do |suite_name, path|
+            puts "#{suite_name} - #{path}"
+          end
         end
       end
 
