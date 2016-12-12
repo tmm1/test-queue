@@ -65,7 +65,7 @@ module TestQueue
         @queue.sort_by! { |suite_name, path| @whitelist.index(suite_name) }
       end
 
-      @awaited_suites = Set.new(@whitelist - @queue.map(&:first))
+      @awaited_suites = Set.new(@whitelist)
       @original_queue = Set.new(@queue).freeze
 
       @workers = {}
@@ -340,6 +340,7 @@ module TestQueue
         # This suite was already added to the queue some other way.
         # We still want to track it in the list of discovered suites though.
         @discovered_suites << [suite_name, path]
+        @awaited_suites.delete(suite_name)
         return
       end
 
