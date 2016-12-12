@@ -338,10 +338,10 @@ module TestQueue
         return
       end
 
+      @discovered_suites << [suite_name, path]
+
       if @original_queue.include?([suite_name, path])
         # This suite was already added to the queue some other way.
-        # We still want to track it in the list of discovered suites though.
-        @discovered_suites << [suite_name, path]
         @awaited_suites.delete(suite_name)
         return
       end
@@ -350,7 +350,6 @@ module TestQueue
       # the front of the queue. It's better to run a fast suite early than to
       # run a slow suite late.
       @queue.unshift [suite_name, path]
-      @discovered_suites << [suite_name, path]
 
       if @awaited_suites.delete?(suite_name) && @awaited_suites.empty?
         # We've found all the whitelisted suites. Sort the queue to match the
