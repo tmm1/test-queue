@@ -74,7 +74,7 @@ module TestQueue
     def load
       data = begin
                File.open(@path, "rb") { |f| Marshal.load(f) }
-             rescue Errno::ENOENT, EOFError, TypeError
+             rescue Errno::ENOENT, EOFError, TypeError, ArgumentError
              end
       return unless data && data.is_a?(Hash) && data[:version] == CURRENT_VERSION
       data[:suites].each do |suite_hash|
