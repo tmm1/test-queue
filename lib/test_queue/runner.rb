@@ -65,7 +65,7 @@ module TestQueue
         @queue.sort_by! { |suite_name, path| @whitelist.index(suite_name) }
       end
 
-      @awaited_suites = Set.new(@whitelist - @queue.map(&:first))
+      @awaited_suites = Set.new(@whitelist)
       @original_queue = Set.new(@queue).freeze
 
       @workers = {}
@@ -109,6 +109,9 @@ module TestQueue
         @queue = []
       end
 
+      @discovered_suites = Set.new
+      @assignments = {}
+
       @exit_when_done = true
 
       @aborting = false
@@ -138,9 +141,23 @@ module TestQueue
       puts "==> Summary (#{@completed.size} workers in %.4fs)" % (Time.now-@start_time)
       puts
 
+      estatus = 0
+      misrun_suites = []
+      unassigned_suites = []
       @failures = ''
       @completed.each do |worker|
+        estatus += worker.status.exitstatus
         @stats.record_suites(worker.suites)
+        worker.suites.each do |suite|
+          assignment = @assignments.delete([suite.name, suite.path])
+          host = worker.host || Socket.gethostname
+          if assignment.nil?
+            unassigned_suites << [suite.name, suite.path]
+          elsif assignment != [host, worker.pid]
+            misrun_suites << [suite.name, suite.path] + assignment + [host, worker.pid]
+          end
+          @discovered_suites.delete([suite.name, suite.path])
+        end
 
         summarize_worker(worker)
 
@@ -164,15 +181,44 @@ module TestQueue
         puts @failures
       end
 
+      if !relay?
+        unless @discovered_suites.empty?
+          estatus += 1
+          puts
+          puts "The following suites were discovered but were not run:"
+          puts
+
+          @discovered_suites.sort.each do |suite_name, path|
+            puts "#{suite_name} - #{path}"
+          end
+        end
+        unless unassigned_suites.empty?
+          estatus += 1
+          puts
+          puts "The following suites were not discovered but were run anyway:"
+          puts
+          unassigned_suites.sort.each do |suite_name, path|
+            puts "#{suite_name} - #{path}"
+          end
+        end
+        unless misrun_suites.empty?
+          estatus += 1
+          puts
+          puts "The following suites were run on the wrong workers:"
+          puts
+          misrun_suites.each do |suite_name, path, target_host, target_pid, actual_host, actual_pid|
+            puts "#{suite_name} - #{path}: #{actual_host} (#{actual_pid}) - assigned to #{target_host} (#{target_pid})"
+          end
+        end
+      end
+
       puts
 
       @stats.save
 
       summarize
 
-      estatus = @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
-      estatus = 255 if estatus > 255
-      estatus
+      [estatus, 255].min
     end
 
     def summarize
@@ -311,8 +357,11 @@ module TestQueue
         return
       end
 
+      @discovered_suites << [suite_name, path]
+
       if @original_queue.include?([suite_name, path])
         # This suite was already added to the queue some other way.
+        @awaited_suites.delete(suite_name)
         return
       end
 
@@ -445,13 +494,16 @@ module TestQueue
           end
 
           case cmd
-          when /^POP/
+          when /^POP (\S+) (\d+)/
             # If we have a slave from a different test run, don't respond, and it will consider the test run done.
+            hostname = $1
+            pid = Integer($2)
             if awaiting_suites?
               sock.write(Marshal.dump("WAIT"))
             elsif obj = @queue.shift
               data = Marshal.dump(obj)
               sock.write(data)
+              @assignments[obj] = [hostname, pid]
             end
           when /^SLAVE (\d+) ([\w\.-]+)(?: (.+))?/
             num = $1.to_i

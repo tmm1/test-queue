@@ -30,7 +30,7 @@ module TestQueue
           connect_to_master("KABOOM")
           break
         else
-          client = connect_to_master('POP')
+          client = connect_to_master("POP #{Socket.gethostname} #{Process.pid}")
         end
         break if client.nil?
         _r, _w, e = IO.select([client], nil, [client], nil)
