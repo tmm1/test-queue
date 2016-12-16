@@ -139,10 +139,12 @@ module TestQueue
       puts "==> Summary (#{@completed.size} workers in %.4fs)" % (Time.now-@start_time)
       puts
 
+      estatus = 0
       misrun_suites = []
       unassigned_suites = []
       @failures = ''
       @completed.each do |worker|
+        estatus += worker.status.exitstatus
         @stats.record_suites(worker.suites)
         worker.suites.each do |suite|
           assignment = @assignments.delete([suite.name, suite.path])
@@ -179,6 +181,7 @@ module TestQueue
 
       if !relay?
         unless @discovered_suites.empty?
+          estatus += 1
           puts
           puts "The following suites were discovered but were not run:"
           puts
@@ -188,6 +191,7 @@ module TestQueue
           end
         end
         unless unassigned_suites.empty?
+          estatus += 1
           puts
           puts "The following suites were not discovered but were run anyway:"
           puts
@@ -196,6 +200,7 @@ module TestQueue
           end
         end
         unless misrun_suites.empty?
+          estatus += 1
           puts
           puts "The following suites were run on the wrong workers:"
           puts
@@ -211,10 +216,7 @@ module TestQueue
 
       summarize
 
-      estatus = @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
-      estatus += 1 if !relay? unless @discovered_suites.empty? && misrun_suites.empty? && unassigned_suites.empty?
-      estatus = 255 if estatus > 255
-      estatus
+      [estatus, 255].min
     end
 
     def summarize
