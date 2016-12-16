@@ -212,7 +212,7 @@ module TestQueue
       summarize
 
       estatus = @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
-      estatus += 1 unless @discovered_suites.empty? && misrun_suites.empty? && unassigned_suites.empty?
+      estatus += 1 if !relay? unless @discovered_suites.empty? && misrun_suites.empty? && unassigned_suites.empty?
       estatus = 255 if estatus > 255
       estatus
     end
