@@ -150,7 +150,7 @@ module TestQueue
           worker.suites.size,
           worker.end_time - worker.start_time,
           worker.pid,
-          worker.status.exitstatus,
+          worker.status.exitstatus || 1,
           worker.host && " on #{worker.host.split('.').first}"
         ]
       end
