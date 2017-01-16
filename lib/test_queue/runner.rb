@@ -146,7 +146,7 @@ module TestQueue
       unassigned_suites = []
       @failures = ''
       @completed.each do |worker|
-        estatus += worker.status.exitstatus
+        estatus += (worker.status.exitstatus || 1)
         @stats.record_suites(worker.suites)
         worker.suites.each do |suite|
           assignment = @assignments.delete([suite.name, suite.path])
