@@ -23,3 +23,11 @@ if ENV["FAIL"]
     end
   end
 end
+
+if ENV["KILL"]
+  class MiniTestKilledFailure < MiniTest::Test
+    def test_kill
+      Process.kill(9, $$)
+    end
+  end
+end
