@@ -168,7 +168,7 @@ module TestQueue
 
       summarize
 
-      estatus = @completed.inject(0){ |s, worker| s + worker.status.exitstatus }
+      estatus = @completed.inject(0){ |s, worker| s + (worker.status.exitstatus || 1)}
       estatus = 255 if estatus > 255
       estatus
     end
