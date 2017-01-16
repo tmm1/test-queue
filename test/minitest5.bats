@@ -74,23 +74,52 @@ assert_test_queue_force_ordering() {
   assert_output_contains "Failed to discover DoesNotExist specified in TEST_QUEUE_FORCE"
 }
 
-@test "multi-master succeeds when all tests pass" {
+@test "multi-master central master succeeds when all tests pass" {
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
-  TEST_QUEUE_RELAY=0.0.0.0:12345 bundle exec minitest-queue ./test/samples/sample_minitest5.rb || true &
+  export SLEEP_AS_RELAY=1
+  TEST_QUEUE_RELAY=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb || true &
   sleep 0.1
-  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec minitest-queue ./test/samples/sample_minitest5.rb
+  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb
   wait
 
   assert_status 0
   assert_output_contains "Starting test-queue master"
 }
 
-@test "multi-master fails when a test fails" {
-  export FAIL=1
+@test "multi-master remote master succeeds when all tests pass" {
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
-  TEST_QUEUE_RELAY=0.0.0.0:12345 bundle exec minitest-queue ./test/samples/sample_minitest5.rb || true &
+  export SLEEP_AS_MASTER=1
+  TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb || true &
   sleep 0.1
-  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec minitest-queue ./test/samples/sample_minitest5.rb
+  TEST_QUEUE_RELAY=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb
+  wait
+
+  assert_status 0
+  assert_output_contains "Starting test-queue master"
+}
+
+@test "multi-master central master fails when a test fails" {
+  export FAIL=1
+  export SLEEP_AS_RELAY=1
+  export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
+  TEST_QUEUE_RELAY=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb || true &
+  sleep 0.1
+  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb
+  wait
+
+  assert_status 1
+  assert_output_contains "Starting test-queue master"
+  assert_output_contains "1) Failure:"
+  assert_output_contains "MiniTestFailure#test_fail"
+}
+
+@test "multi-master remote master fails when a test fails" {
+  export FAIL=1
+  export SLEEP_AS_MASTER=1
+  export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
+  TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb || true &
+  sleep 0.1
+  TEST_QUEUE_RELAY=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb
   wait
 
   assert_status 1

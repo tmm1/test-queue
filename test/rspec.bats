@@ -37,7 +37,7 @@ setup() {
   assert_output_contains "0 examples, 0 failures"
 }
 
-@test "Use to Shared Exsamples." {
+@test "rspec-queue supports shared example groups" {
   run bundle exec rspec-queue ./test/samples/sample_use_shared_example1_spec.rb \
                               ./test/samples/sample_use_shared_example2_spec.rb
   assert_status 0
