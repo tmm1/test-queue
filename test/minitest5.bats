@@ -128,6 +128,13 @@ assert_test_queue_force_ordering() {
   assert_output_contains "MiniTestFailure#test_fail"
 }
 
+@test "recovers from child processes dying in an unorderly way" {
+  export KILL=1
+  run bundle exec minitest-queue ./test/samples/sample_minitest5.rb
+  assert_status 1
+  assert_output_contains "SIGKILL (signal 9)"
+}
+
 @test "minitest-queue fails when TEST_QUEUE_WORKERS is <= 0" {
   export TEST_QUEUE_WORKERS=0
   run bundle exec minitest-queue ./test/samples/sample_minitest5.rb
