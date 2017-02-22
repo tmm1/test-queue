@@ -12,7 +12,7 @@ end
 
 class ::RSpec::Core::ExampleGroup
   def self.failure_count
-    examples.map {|e| e.execution_result[:status] == "failed"}.length
+    examples.select {|e| e.execution_result.status == :failed}.length
   end
 end
 
