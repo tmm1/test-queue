@@ -485,7 +485,7 @@ module TestQueue
           cmd = sock.gets.strip
 
           token = token[TOKEN_REGEX, 1]
-          # If we have a slave from a different test run, respond with "WRONG RUN", and it will consider the test run done.
+          # If we have a remote master from a different test run, respond with "WRONG RUN", and it will consider the test run done.
           if token != @run_token
             message = token.nil? ? "Worker sent no token to master" : "Worker from run #{token} connected to master"
             STDERR.puts "*** #{message} for run #{@run_token}; ignoring."
