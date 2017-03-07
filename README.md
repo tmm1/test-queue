@@ -35,9 +35,9 @@ the workload and relay results back to a central master.
 - `TEST_QUEUE_RELAY`: relay results back to a central master, specified as tcp `address:port`
 - `TEST_QUEUE_STATS`: `path` to cache build stats in-build CI runs (default: `.test_queue_stats`)
 - `TEST_QUEUE_FORCE`: comma separated list of suites to run
-- `TEST_QUEUE_RELAY_TIMEOUT`: when using remote workers, the amount of time a worker will try to reconnect to start work
-- `TEST_QUEUE_RELAY_TOKEN`: when using remote workers, this must be the same on both workers and the server for remote workers to run tests.
-- `TEST_QUEUE_SLAVE_MESSAGE`: when using remote workers, set this on a slave worker and it will appear on the slave's connection message on the master.
+- `TEST_QUEUE_RELAY_TIMEOUT`: when using distributed builds, the amount of time a remote master will try to reconnect to start work
+- `TEST_QUEUE_RELAY_TOKEN`: when using distributed builds, this must be the same on remote masters and the central master for remote masters to be able to connect.
+- `TEST_QUEUE_SLAVE_MESSAGE`: when using distributed builds, set this on a remote master and it will appear in that master's connection message on the central master.
 - `TEST_QUEUE_SPLIT_GROUPS`: split tests up by example rather than example group. Faster for tests with short setup time such as selenium. RSpec only. Add the :no_split tag to ExampleGroups you don't want split.
 
 ### usage
@@ -100,8 +100,8 @@ MyAppTestRunner.new.execute
 ### distributed mode
 
 To use distributed mode, the central master must listen on a tcp port. Additional masters can be booted
-in relay mode to connect to the central master. Workers must provide a TEST_QUEUE_RELAY_TOKEN to match
-the master's.
+in relay mode to connect to the central master. Remote masters must provide a TEST_QUEUE_RELAY_TOKEN
+to match the central master's.
 
 ```
 $ TEST_QUEUE_RELAY_TOKEN=123 TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec minitest-queue ./test/sample_test.rb
