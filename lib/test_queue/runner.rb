@@ -268,7 +268,7 @@ module TestQueue
       message = @slave_message ? " #{@slave_message}" : ""
       message.gsub!(/(\r|\n)/, "") # Our "protocol" is newline-separated
       sock.puts("TOKEN=#{@run_token}")
-      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{message}")
+      sock.puts("REMOTE MASTER #{@concurrency} #{Socket.gethostname} #{message}")
       response = sock.gets.strip
       unless response == "OK"
         STDERR.puts "*** Got non-OK response from master: #{response}"
@@ -504,16 +504,16 @@ module TestQueue
               sock.write(data)
               @assignments[obj] = [hostname, pid]
             end
-          when /^SLAVE (\d+) ([\w\.-]+)(?: (.+))?/
+          when /^REMOTE MASTER (\d+) ([\w\.-]+)(?: (.+))?/
             num = $1.to_i
-            slave = $2
-            slave_message = $3
+            remote_master = $2
+            remote_master_message = $3
 
             sock.write("OK\n")
             remote_workers += num
 
-            message = "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
-            message << " " + slave_message if slave_message
+            message = "*** #{num} workers connected from #{remote_master} after #{Time.now-@start_time}s"
+            message << " " + remote_master_message if remote_master_message
             STDERR.puts message
           when /^WORKER (\d+)/
             data = sock.read($1.to_i)
