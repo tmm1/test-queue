@@ -495,7 +495,6 @@ module TestQueue
 
           case cmd
           when /^POP (\S+) (\d+)/
-            # If we have a slave from a different test run, don't respond, and it will consider the test run done.
             hostname = $1
             pid = Integer($2)
             if awaiting_suites?
