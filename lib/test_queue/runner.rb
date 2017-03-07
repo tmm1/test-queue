@@ -85,7 +85,7 @@ module TestQueue
         raise ArgumentError, "Worker count (#{@concurrency}) must be greater than 0"
       end
 
-      @slave_connection_timeout =
+      @relay_connection_timeout =
         (ENV['TEST_QUEUE_RELAY_TIMEOUT'] && ENV['TEST_QUEUE_RELAY_TIMEOUT'].to_i) ||
         30
 
@@ -546,12 +546,12 @@ module TestQueue
     def connect_to_relay
       sock = nil
       start = Time.now
-      puts "Attempting to connect for #{@slave_connection_timeout}s..."
+      puts "Attempting to connect for #{@relay_connection_timeout}s..."
       while sock.nil?
         begin
           sock = TCPSocket.new(*@relay.split(':'))
         rescue Errno::ECONNREFUSED => e
-          raise e if Time.now - start > @slave_connection_timeout
+          raise e if Time.now - start > @relay_connection_timeout
           puts "Master not yet available, sleeping..."
           sleep 0.5
         end
