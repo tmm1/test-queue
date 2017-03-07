@@ -100,7 +100,7 @@ module TestQueue
         relay ||
         ENV['TEST_QUEUE_RELAY']
 
-      @slave_message = ENV["TEST_QUEUE_SLAVE_MESSAGE"] if ENV.has_key?("TEST_QUEUE_SLAVE_MESSAGE")
+      @remote_master_message = ENV["TEST_QUEUE_REMOTE_MASTER_MESSAGE"] if ENV.has_key?("TEST_QUEUE_REMOTE_MASTER_MESSAGE")
 
       if @relay == @socket
         STDERR.puts "*** Detected TEST_QUEUE_RELAY == TEST_QUEUE_SOCKET. Disabling relay mode."
@@ -265,7 +265,7 @@ module TestQueue
       return unless relay?
 
       sock = connect_to_relay
-      message = @slave_message ? " #{@slave_message}" : ""
+      message = @remote_master_message ? " #{@remote_master_message}" : ""
       message.gsub!(/(\r|\n)/, "") # Our "protocol" is newline-separated
       sock.puts("TOKEN=#{@run_token}")
       sock.puts("REMOTE MASTER #{@concurrency} #{Socket.gethostname} #{message}")

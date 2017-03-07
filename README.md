@@ -37,7 +37,7 @@ the workload and relay results back to a central master.
 - `TEST_QUEUE_FORCE`: comma separated list of suites to run
 - `TEST_QUEUE_RELAY_TIMEOUT`: when using distributed builds, the amount of time a remote master will try to reconnect to start work
 - `TEST_QUEUE_RELAY_TOKEN`: when using distributed builds, this must be the same on remote masters and the central master for remote masters to be able to connect.
-- `TEST_QUEUE_SLAVE_MESSAGE`: when using distributed builds, set this on a remote master and it will appear in that master's connection message on the central master.
+- `TEST_QUEUE_REMOTE_MASTER_MESSAGE`: when using distributed builds, set this on a remote master and it will appear in that master's connection message on the central master.
 - `TEST_QUEUE_SPLIT_GROUPS`: split tests up by example rather than example group. Faster for tests with short setup time such as selenium. RSpec only. Add the :no_split tag to ExampleGroups you don't want split.
 
 ### usage
@@ -83,8 +83,8 @@ class MyAppTestRunner < TestQueue::Runner::MiniTest
       # ...
     end
 
-    # If this is a remote slave, tell the master something about us
-    @slave_message = "Output for slave 123: http://myhost.com/build/123"
+    # If this is a remote master, tell the central master something about us
+    @remote_master_message = "Output for remote master 123: http://myhost.com/build/123"
   end
 
   def around_filter(suite)
