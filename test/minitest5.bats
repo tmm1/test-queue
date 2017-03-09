@@ -128,6 +128,16 @@ assert_test_queue_force_ordering() {
   assert_output_contains "MiniTestFailure#test_fail"
 }
 
+@test "multi-master central master prints out remote master messages" {
+  export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
+  TEST_QUEUE_RELAY=0.0.0.0:12345 TEST_QUEUE_REMOTE_MASTER_MESSAGE="hello from remote master" bundle exec minitest-queue ./test/samples/sample_minitest5.rb &
+  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec minitest-queue ./test/samples/sample_minitest5.rb
+  wait
+
+  assert_status 0
+  assert_output_contains "hello from remote master"
+}
+
 @test "recovers from child processes dying in an unorderly way" {
   export KILL=1
   run bundle exec minitest-queue ./test/samples/sample_minitest5.rb

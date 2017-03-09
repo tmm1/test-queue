@@ -85,7 +85,7 @@ module TestQueue
         raise ArgumentError, "Worker count (#{@concurrency}) must be greater than 0"
       end
 
-      @slave_connection_timeout =
+      @relay_connection_timeout =
         (ENV['TEST_QUEUE_RELAY_TIMEOUT'] && ENV['TEST_QUEUE_RELAY_TIMEOUT'].to_i) ||
         30
 
@@ -100,7 +100,7 @@ module TestQueue
         relay ||
         ENV['TEST_QUEUE_RELAY']
 
-      @slave_message = ENV["TEST_QUEUE_SLAVE_MESSAGE"] if ENV.has_key?("TEST_QUEUE_SLAVE_MESSAGE")
+      @remote_master_message = ENV["TEST_QUEUE_REMOTE_MASTER_MESSAGE"] if ENV.has_key?("TEST_QUEUE_REMOTE_MASTER_MESSAGE")
 
       if @relay == @socket
         STDERR.puts "*** Detected TEST_QUEUE_RELAY == TEST_QUEUE_SOCKET. Disabling relay mode."
@@ -265,10 +265,10 @@ module TestQueue
       return unless relay?
 
       sock = connect_to_relay
-      message = @slave_message ? " #{@slave_message}" : ""
+      message = @remote_master_message ? " #{@remote_master_message}" : ""
       message.gsub!(/(\r|\n)/, "") # Our "protocol" is newline-separated
       sock.puts("TOKEN=#{@run_token}")
-      sock.puts("SLAVE #{@concurrency} #{Socket.gethostname} #{message}")
+      sock.puts("REMOTE MASTER #{@concurrency} #{Socket.gethostname} #{message}")
       response = sock.gets.strip
       unless response == "OK"
         STDERR.puts "*** Got non-OK response from master: #{response}"
@@ -485,7 +485,7 @@ module TestQueue
           cmd = sock.gets.strip
 
           token = token[TOKEN_REGEX, 1]
-          # If we have a slave from a different test run, respond with "WRONG RUN", and it will consider the test run done.
+          # If we have a remote master from a different test run, respond with "WRONG RUN", and it will consider the test run done.
           if token != @run_token
             message = token.nil? ? "Worker sent no token to master" : "Worker from run #{token} connected to master"
             STDERR.puts "*** #{message} for run #{@run_token}; ignoring."
@@ -495,7 +495,6 @@ module TestQueue
 
           case cmd
           when /^POP (\S+) (\d+)/
-            # If we have a slave from a different test run, don't respond, and it will consider the test run done.
             hostname = $1
             pid = Integer($2)
             if awaiting_suites?
@@ -505,16 +504,16 @@ module TestQueue
               sock.write(data)
               @assignments[obj] = [hostname, pid]
             end
-          when /^SLAVE (\d+) ([\w\.-]+)(?: (.+))?/
+          when /^REMOTE MASTER (\d+) ([\w\.-]+)(?: (.+))?/
             num = $1.to_i
-            slave = $2
-            slave_message = $3
+            remote_master = $2
+            remote_master_message = $3
 
             sock.write("OK\n")
             remote_workers += num
 
-            message = "*** #{num} workers connected from #{slave} after #{Time.now-@start_time}s"
-            message << " " + slave_message if slave_message
+            message = "*** #{num} workers connected from #{remote_master} after #{Time.now-@start_time}s"
+            message << " " + remote_master_message if remote_master_message
             STDERR.puts message
           when /^WORKER (\d+)/
             data = sock.read($1.to_i)
@@ -546,12 +545,12 @@ module TestQueue
     def connect_to_relay
       sock = nil
       start = Time.now
-      puts "Attempting to connect for #{@slave_connection_timeout}s..."
+      puts "Attempting to connect for #{@relay_connection_timeout}s..."
       while sock.nil?
         begin
           sock = TCPSocket.new(*@relay.split(':'))
         rescue Errno::ECONNREFUSED => e
-          raise e if Time.now - start > @slave_connection_timeout
+          raise e if Time.now - start > @relay_connection_timeout
           puts "Master not yet available, sleeping..."
           sleep 0.5
         end
