@@ -75,6 +75,7 @@ class MyAppTestRunner < TestQueue::Runner::MiniTest
     # use separate redis database
     $redis.client.db = num
     $redis.client.reconnect
+    super
   end
 
   def prepare(concurrency)
