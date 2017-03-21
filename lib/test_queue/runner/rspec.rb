@@ -47,6 +47,8 @@ module TestQueue
                    example_or_group.id
                  elsif example_or_group.respond_to?(:full_description)
                    example_or_group.full_description
+                 elsif example_or_group.metadata.key?(:full_description)
+                   example_or_group.metadata[:full_description]
                  else
                    example_or_group.metadata[:example_group][:full_description]
                  end
