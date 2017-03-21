@@ -10,12 +10,6 @@ else
   fail 'requires rspec version 2 or 3'
 end
 
-class ::RSpec::Core::ExampleGroup
-  def self.failure_count
-    examples.map {|e| e.execution_result[:status] == "failed"}.length
-  end
-end
-
 module TestQueue
   class Runner
     class RSpec < Runner

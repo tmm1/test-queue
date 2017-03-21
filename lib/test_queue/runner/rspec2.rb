@@ -1,3 +1,9 @@
+class ::RSpec::Core::ExampleGroup
+  def self.failure_count
+    examples.map {|e| e.execution_result[:status] == "failed"}.length
+  end
+end
+
 module RSpec::Core
   class QueueRunner < CommandLine
     def initialize
