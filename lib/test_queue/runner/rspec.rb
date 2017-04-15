@@ -33,6 +33,14 @@ module TestQueue
 
   class TestFramework
     class RSpec < TestFramework
+      begin
+        require 'turnip/rspec'
+
+        include Turnip::RSpec::Loader
+      rescue LoadError
+        # noop
+      end
+
       def all_suite_files
         options = ::RSpec::Core::ConfigurationOptions.new(ARGV)
         options.parse_options if options.respond_to?(:parse_options)
