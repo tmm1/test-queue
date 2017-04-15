@@ -13,6 +13,9 @@ env:
   - SUITE=rspec3-1
   - SUITE=rspec3-2
   - SUITE=testunit
+  - SUITE=turnip1-2
+  - SUITE=turnip2-1
+  - SUITE=turnip3-0
 script: script/cibuild
 notifications:
   email: false
