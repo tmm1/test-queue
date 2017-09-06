@@ -39,6 +39,7 @@ the workload and relay results back to a central master.
 - `TEST_QUEUE_RELAY_TOKEN`: when using distributed builds, this must be the same on remote masters and the central master for remote masters to be able to connect.
 - `TEST_QUEUE_REMOTE_MASTER_MESSAGE`: when using distributed builds, set this on a remote master and it will appear in that master's connection message on the central master.
 - `TEST_QUEUE_SPLIT_GROUPS`: split tests up by example rather than example group. Faster for tests with short setup time such as selenium. RSpec only. Add the :no_split tag to ExampleGroups you don't want split.
+- `TEST_QUEUE_COVERAGE`: configures `SimpleCov` reporting from each worker and the master process. Yields a `SimpleCov` output with a single profile for each worker and the master.
 
 ### usage
 
