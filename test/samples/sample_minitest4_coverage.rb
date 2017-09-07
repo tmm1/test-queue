@@ -6,6 +6,6 @@ require_relative 'coverage'
 
 class MiniTestEqual < MiniTest::Unit::TestCase
   def test_equal
-    assert_equal(Test.new.test, 'test')
+    assert_equal(TestClass.new.test, 'test')
   end
 end

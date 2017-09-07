@@ -4,6 +4,7 @@ SCRATCH=tmp/minitest5-tests
 
 setup() {
   require_gem "minitest" ">= 5.0"
+  rm -rf coverage
   rm -rf $SCRATCH
   mkdir -p $SCRATCH
 }

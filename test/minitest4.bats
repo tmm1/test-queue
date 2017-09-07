@@ -1,6 +1,7 @@
 load "testlib"
 
 setup() {
+  rm -rf coverage
   require_gem "minitest" ">= 4.0"
 }
 

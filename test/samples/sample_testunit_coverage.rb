@@ -1,10 +1,9 @@
-require 'minitest/autorun'
-
+require 'test/unit'
 require 'simplecov'
 SimpleCov.start
 require_relative 'coverage'
 
-class MiniTestEqual < MiniTest::Test
+class TestUnitEqual < Test::Unit::TestCase
   def test_equal
     assert_equal TestClass.new.test, 'test'
   end

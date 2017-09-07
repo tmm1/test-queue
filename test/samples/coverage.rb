@@ -1,4 +1,4 @@
-class Test
+class TestClass
   def test
     'test'
   end
