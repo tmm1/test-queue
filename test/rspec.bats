@@ -1,6 +1,7 @@
 load "testlib"
 
 setup() {
+  run rm -rf coverage
   require_gem "rspec" ">= 2.0"
 }
 
@@ -46,7 +47,7 @@ setup() {
 
 @test "rspec-queue supports coverage" {
   export TEST_QUEUE_COVERAGE=true
-  run bundle exec rspec-queue -r simplecov test/samples/coverage_spec.rb
+  run bundle exec rspec-queue -r simplecov test/samples/sample_rspec_coverage_spec.rb
   assert_status 0
 
   assert_output_contains "3 / 3 LOC (100.0%) covered."

@@ -32,3 +32,11 @@ setup() {
   assert_output_contains "1) Failure:"
   assert_output_contains "Meme::when asked about blending possibilities#test_0002_fails"
 }
+
+@test "minitest-queue supports coverage" {
+  export TEST_QUEUE_COVERAGE=true
+  run bundle exec ruby -r simplecov ./bin/minitest-queue ./test/samples/sample_minitest4_coverage.rb
+  assert_status 0
+
+  assert_output_contains "3 / 3 LOC (100.0%) covered."
+}
