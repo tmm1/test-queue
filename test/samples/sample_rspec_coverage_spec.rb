@@ -3,7 +3,7 @@ require 'simplecov'
 SimpleCov.start
 require_relative 'coverage'
 
-describe Test do
+describe TestClass do
   it 'returns test' do
     expect(TestClass.new.test).to eq('test')
   end
