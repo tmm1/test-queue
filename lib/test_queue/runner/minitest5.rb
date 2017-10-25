@@ -28,14 +28,28 @@ module MiniTest
     def _synchronize; Test.io_lock.synchronize { yield }; end
   end
 
-  class ProgressReporter
+  class SummaryReporter
     # Override original method to make test-queue specific output
-    def record result
-      io.print '    '
-      io.print result.class
-      io.print ': '
-      io.print result.result_code
-      io.puts("  <%.3f>" % result.time)
+    def report
+      aggregate = results.group_by { |r| r.class }
+      aggregate.each do |class_name, results|
+        io.print '    '
+        io.print class_name
+        io.print ': '
+        result_codes = []
+        time = 0
+
+        results.each do |result|
+          result_codes << result.result_code
+          time += result.time
+        end
+        io.print result_codes.join
+        io.print "  <%.3f>" % time
+      end
+    end
+
+    def record(result)
+      results << result
     end
   end
 
