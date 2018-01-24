@@ -4,7 +4,7 @@ spec = Gem::Specification.new do |s|
   s.summary = 'parallel test runner'
   s.description = 'minitest/rspec parallel test runner for CI environments'
 
-  s.homepage = "http://github.com/tmm1/test-queue"
+  s.homepage = "https://github.com/tmm1/test-queue"
 
   s.authors = ["Aman Gupta"]
   s.email = "ruby@tmm1.net"
