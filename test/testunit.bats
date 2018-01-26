@@ -1,6 +1,7 @@
 load "testlib"
 
 setup() {
+  rm -rf coverage
   require_gem "test-unit" ">= 3.0"
 }
 
@@ -17,4 +18,10 @@ setup() {
   assert_output_contains "Starting test-queue master"
   assert_output_contains "Failure:"
   assert_output_contains "test_fail(TestUnitFailure)"
+}
+
+@test "testunit-queue supports coverage" {
+  run bundle exec ruby -r simplecov ./bin/testunit-queue ./test/samples/sample_testunit_coverage.rb
+  assert_status 0
+  assert_output_contains "Starting test-queue master"
 }

@@ -55,3 +55,9 @@ teardown() {
   assert_status 0
   refute_output_matches "Feature: Foobar$"
 }
+
+@test "cucumber-queue supports coverage" {
+  run bundle exec cucumber-queue test/samples/features/sample_coverage.feature --require test/samples/features/step_definitions
+  assert_status 0
+  assert_output_contains "Starting test-queue master"
+}

@@ -137,6 +137,12 @@ module TestQueue
     end
 
     def summarize_internal
+      if ENV['TEST_QUEUE_COVERAGE']
+        # Report the SimpleCov pre-fork configuration
+        SimpleCov.command_name 'test-queue-master'
+        SimpleCov.result.format!
+      end
+
       puts
       puts "==> Summary (#{@completed.size} workers in %.4fs)" % (Time.now-@start_time)
       puts
@@ -299,7 +305,7 @@ module TestQueue
           iterator = Iterator.new(@test_framework, relay?? @relay : @socket, method(:around_filter), early_failure_limit: @early_failure_limit, run_token: @run_token)
           after_fork_internal(num, iterator)
           ret = run_worker(iterator) || 0
-          cleanup_worker
+          cleanup_worker_internal
           Kernel.exit! ret
         end
 
@@ -382,6 +388,12 @@ module TestQueue
     def after_fork_internal(num, iterator)
       srand
 
+      if ENV['TEST_QUEUE_COVERAGE']
+        SimpleCov.command_name "test-queue-worker-#{num}"
+        # Update the SimpleCov pid so it doesn't exit automatically
+        SimpleCov.pid = $$
+      end
+
       output = File.open("/tmp/test_queue_worker_#{$$}_output", 'w')
 
       $stdout.reopen(output)
@@ -420,6 +432,15 @@ module TestQueue
       end
 
       return 0 # exit status
+    end
+
+    def cleanup_worker_internal
+      if ENV['TEST_QUEUE_COVERAGE']
+        # Report SimpleCov results
+        SimpleCov.result.format!
+      end
+
+      cleanup_worker
     end
 
     def cleanup_worker

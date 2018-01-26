@@ -4,6 +4,7 @@ SCRATCH=tmp/minitest5-tests
 
 setup() {
   require_gem "minitest" ">= 5.0"
+  rm -rf coverage
   rm -rf $SCRATCH
   mkdir -p $SCRATCH
 }
@@ -191,4 +192,13 @@ assert_test_queue_force_ordering() {
   run bundle exec minitest-queue $SCRATCH/sample_minispec.rb
   assert_status 0
   assert_output_contains "Meme2::when asked about blending possibilities"
+}
+
+
+@test "minitest-queue supports coverage" {
+  export TEST_QUEUE_COVERAGE=true
+  run bundle exec ruby -r simplecov ./bin/minitest-queue ./test/samples/sample_minitest5_coverage.rb
+  assert_status 0
+
+  assert_output_contains "3 / 3 LOC (100.0%) covered."
 }
