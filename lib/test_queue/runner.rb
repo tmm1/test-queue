@@ -300,7 +300,7 @@ module TestQueue
           after_fork_internal(num, iterator)
           ret = run_worker(iterator) || 0
           cleanup_worker
-          Kernel.exit! ret
+          exit! ret
         end
 
         @workers[pid] = Worker.new(pid, num)
@@ -324,7 +324,7 @@ module TestQueue
 
         @test_framework.all_suite_files.each do |path|
           @test_framework.suites_from_file(path).each do |suite_name, suite|
-            Kernel.exit!(0) if terminate
+            exit!(0) if terminate
 
             @server.connect_address.connect do |sock|
               sock.puts("TOKEN=#{@run_token}")
@@ -333,7 +333,7 @@ module TestQueue
           end
         end
 
-        Kernel.exit! 0
+        exit! 0
       end
     end
 
