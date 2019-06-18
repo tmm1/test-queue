@@ -10,7 +10,6 @@ spec = Gem::Specification.new do |s|
   s.email = "ruby@tmm1.net"
   s.license = 'MIT'
 
-  s.has_rdoc = false
   s.bindir = 'bin'
   s.executables << 'rspec-queue'
   s.executables << 'minitest-queue'
