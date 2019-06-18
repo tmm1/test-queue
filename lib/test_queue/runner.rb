@@ -37,6 +37,7 @@ module TestQueue
       @test_framework = test_framework
       @stats = Stats.new(stats_file)
 
+      @early_failure_limit = nil
       if ENV['TEST_QUEUE_EARLY_FAILURE_LIMIT']
         begin
           @early_failure_limit = Integer(ENV['TEST_QUEUE_EARLY_FAILURE_LIMIT'])
