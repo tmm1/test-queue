@@ -15,7 +15,9 @@ setup() {
   run bundle exec rspec-queue ./test/samples/sample_spec.rb
   assert_status 1
   assert_output_contains "1) RSpecFailure fails"
-  assert_output_contains "Failure/Error: expect(:foo).to eq :bar"
+  assert_output_contains "Failure/Error:"
+  assert_output_contains "expected: :bar"
+  assert_output_contains "got: :foo"
 }
 
 @test "TEST_QUEUE_SPLIT_GROUPS splits splittable groups" {

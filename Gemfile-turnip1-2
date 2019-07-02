@@ -1,0 +1,5 @@
+source 'https://rubygems.org'
+gemspec
+gem 'turnip', '1.2.2'
+gem 'gherkin', '2.12.2'
+gem 'rspec', '2.13.0'
