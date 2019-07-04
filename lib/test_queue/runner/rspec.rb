@@ -36,7 +36,14 @@ module TestQueue
         options.parse_options if options.respond_to?(:parse_options)
         options.configure(::RSpec.configuration)
 
-        ::RSpec.configuration.files_to_run.uniq
+        files = ::RSpec.configuration.files_to_run.uniq
+        # Save spec file path to print re-run command with spec file path
+        if ::RSpec.configuration.respond_to?(:loaded_spec_files)
+          files.each do |f|
+            ::RSpec.configuration.loaded_spec_files << File.expand_path(f)
+          end
+        end
+        files
       end
 
       def suites_from_file(path)

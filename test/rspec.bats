@@ -16,6 +16,7 @@ setup() {
   assert_status 1
   assert_output_contains "1) RSpecFailure fails"
   assert_output_contains "Failure/Error: expect(:foo).to eq :bar"
+  assert_output_contains "rspec ./test/samples/sample_spec.rb:21"
 }
 
 @test "TEST_QUEUE_SPLIT_GROUPS splits splittable groups" {
