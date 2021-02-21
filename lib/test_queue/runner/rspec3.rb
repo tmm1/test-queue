@@ -47,6 +47,7 @@ module RSpec::Core
             ret
           }.all? ? 0 : @configuration.failure_exit_code
         end
+        persist_example_statuses if defined?(persist_example_statuses)
       end
     end
     alias_method :run_each, :run_specs
