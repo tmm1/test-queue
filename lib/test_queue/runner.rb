@@ -101,7 +101,12 @@ module TestQueue
         relay ||
         ENV['TEST_QUEUE_RELAY']
 
-      @remote_master_message = ENV["TEST_QUEUE_REMOTE_MASTER_MESSAGE"] if ENV.has_key?("TEST_QUEUE_REMOTE_MASTER_MESSAGE")
+      @remote_master_message = if ENV.has_key?("TEST_QUEUE_REMOTE_MASTER_MESSAGE")
+                                 ENV["TEST_QUEUE_REMOTE_MASTER_MESSAGE"]
+                               elsif ENV.has_key?("TEST_QUEUE_SLAVE_MESSAGE")
+                                 warn("`TEST_QUEUE_SLAVE_MESSAGE` is deprecated. Use `TEST_QUEUE_REMOTE_MASTER_MESSAGE` instead.")
+                                 ENV["TEST_QUEUE_SLAVE_MESSAGE"]
+                               end
 
       if @relay == @socket
         STDERR.puts "*** Detected TEST_QUEUE_RELAY == TEST_QUEUE_SOCKET. Disabling relay mode."
