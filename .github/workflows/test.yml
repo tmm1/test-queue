@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  main:
+    name: >-
+      ${{ matrix.os }} ${{ matrix.ruby }}
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu]
+        # Lowest and Latest version.
+        ruby: ['2.3', '3.1']
+        gemfile:
+          - gemfiles/Gemfile
+          - gemfiles/Gemfile-cucumber1-3
+          - gemfiles/Gemfile-cucumber2-4
+          - gemfiles/Gemfile-minitest4
+          - gemfiles/Gemfile-minitest5
+          - gemfiles/Gemfile-rspec2-1
+          - gemfiles/Gemfile-rspec3-0
+          - gemfiles/Gemfile-rspec3-1
+          - gemfiles/Gemfile-rspec3-2
+          - gemfiles/Gemfile-testunit
+    env:
+      - BUNDLE_GEMFILE: ${{ matrix.gemfile }}
+      - TEST_QUEUE_WORKERS: 2
+      - TEST_QUEUE_VERBOSE: 1
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+
+      - name: install dependencies
+        run: bundle install --jobs 3 --retry 3
+      - name: spec
+        run: bundle exec rake
