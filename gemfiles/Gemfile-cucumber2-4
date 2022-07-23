@@ -1,0 +1,7 @@
+source 'https://rubygems.org'
+
+gem 'cucumber', '2.4.0'
+# Pin Rake version to Prevent `NoMethodError: undefined method `last_comment'`.
+gem 'rake', '< 11.0'
+gem 'rspec'
+gem 'rspec-expectations', '2.14.4'

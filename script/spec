@@ -1,7 +1,0 @@
-#!/bin/sh
-
-set -ex
-
-export BUNDLE_GEMFILE=Gemfile-rspec3-2
-bundle install
-bundle exec rspec spec
