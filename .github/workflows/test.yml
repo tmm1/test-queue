@@ -11,6 +11,10 @@ jobs:
     name: >-
       ${{ matrix.os }} ${{ matrix.ruby }}
     runs-on: ${{ matrix.os }}-latest
+    env:
+      BUNDLE_GEMFILE: ${{ matrix.gemfile }}
+      TEST_QUEUE_WORKERS: 2
+      TEST_QUEUE_VERBOSE: 1
     strategy:
       fail-fast: false
       matrix:
@@ -18,7 +22,7 @@ jobs:
         # Lowest and Latest version.
         ruby: ['2.3', '3.1']
         gemfile:
-          - gemfiles/Gemfile
+          - Gemfile
           - gemfiles/Gemfile-cucumber1-3
           - gemfiles/Gemfile-cucumber2-4
           - gemfiles/Gemfile-minitest4
@@ -28,10 +32,6 @@ jobs:
           - gemfiles/Gemfile-rspec3-1
           - gemfiles/Gemfile-rspec3-2
           - gemfiles/Gemfile-testunit
-    env:
-      - BUNDLE_GEMFILE: ${{ matrix.gemfile }}
-      - TEST_QUEUE_WORKERS: 2
-      - TEST_QUEUE_VERBOSE: 1
 
     steps:
       - name: checkout
