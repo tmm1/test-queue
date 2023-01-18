@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.email = "ruby@tmm1.net"
   s.license = 'MIT'
 
-  s.bindir = 'bin'
+  s.bindir = 'exe'
   s.executables << 'rspec-queue'
   s.executables << 'minitest-queue'
   s.executables << 'testunit-queue'
