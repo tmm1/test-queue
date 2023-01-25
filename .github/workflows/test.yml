@@ -28,9 +28,7 @@ jobs:
           - gemfiles/Gemfile-minitest4
           - gemfiles/Gemfile-minitest5
           - gemfiles/Gemfile-rspec2-1
-          - gemfiles/Gemfile-rspec3-0
-          - gemfiles/Gemfile-rspec3-1
-          - gemfiles/Gemfile-rspec3-2
+          - gemfiles/Gemfile-rspec3
           - gemfiles/Gemfile-testunit
 
     steps:
