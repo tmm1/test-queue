@@ -2,3 +2,4 @@
 .ruby-version
 Gemfile.lock
 gemfiles/Gemfile-*.lock
+vendor
