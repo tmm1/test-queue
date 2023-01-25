@@ -4,5 +4,5 @@ if !IO.respond_to?(:binread)
   end
 end
 
-require 'test_queue/iterator'
-require 'test_queue/runner'
+require_relative 'test_queue/iterator'
+require_relative 'test_queue/runner'

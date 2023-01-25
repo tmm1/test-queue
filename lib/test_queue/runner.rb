@@ -2,8 +2,8 @@ require 'set'
 require 'socket'
 require 'fileutils'
 require 'securerandom'
-require 'test_queue/stats'
-require 'test_queue/test_framework'
+require_relative 'stats'
+require_relative 'test_framework'
 
 module TestQueue
   class Worker

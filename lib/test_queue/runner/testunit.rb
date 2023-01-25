@@ -1,4 +1,4 @@
-require 'test_queue/runner'
+require_relative '../runner'
 
 gem 'test-unit'
 require 'test/unit'

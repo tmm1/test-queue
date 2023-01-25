@@ -1,4 +1,4 @@
-require 'test_queue/runner'
+require_relative '../runner'
 require 'rspec/core'
 
 case ::RSpec::Core::Version::STRING.to_i

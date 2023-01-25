@@ -1,5 +1,8 @@
 require "fileutils"
 require "tempfile"
+
+$LOAD_PATH.unshift File.expand_path("../lib", __dir__)
+
 require "test_queue/stats"
 
 RSpec.describe TestQueue::Stats do

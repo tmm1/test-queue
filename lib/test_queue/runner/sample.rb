@@ -1,5 +1,5 @@
-require 'test_queue'
-require 'test_queue/runner'
+require_relative '../../test_queue'
+require_relative '../runner'
 
 module TestQueue
   class Runner

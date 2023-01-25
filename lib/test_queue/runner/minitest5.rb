@@ -1,4 +1,4 @@
-require 'test_queue/runner'
+require_relative '../runner'
 
 module MiniTest
   def self.__run reporter, options
