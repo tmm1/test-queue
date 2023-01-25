@@ -10,3 +10,4 @@ mkdir tmp
 mkdir -p vendor/bats
 curl --silent --location --show-error https://github.com/sstephenson/bats/archive/v0.4.0.tar.gz | tar -xz -C tmp
 tmp/bats-0.4.0/install.sh "$ROOT/vendor/bats"
+rm -rf tmp
