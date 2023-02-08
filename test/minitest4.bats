@@ -1,7 +1,7 @@
 load "testlib"
 
 setup() {
-  require_gem "minitest" ">= 4.0"
+  require_gem "minitest" "~> 4.0"
 }
 
 @test "minitest-queue succeeds when all tests pass" {
