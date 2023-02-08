@@ -1,5 +1,6 @@
 .test_queue_stats
 .ruby-version
 Gemfile.lock
-gemfiles/Gemfile-*.lock
+gemfiles/.bundle/
+*.gemfile.lock
 vendor
