@@ -3,7 +3,7 @@ load "testlib"
 SCRATCH=tmp/minitest5-tests
 
 setup() {
-  require_gem "minitest" ">= 5.0"
+  require_gem "minitest" "~> 5.0"
   rm -rf $SCRATCH
   mkdir -p $SCRATCH
 }

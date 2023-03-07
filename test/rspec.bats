@@ -25,7 +25,8 @@ setup() {
   run bundle exec rspec-queue ./test/samples/sample_split_spec.rb
   assert_status 0
 
-  assert_output_matches '\[ \d\] +1 example, 0 failures'
+  assert_output_matches '\[ 1\] +1 example, 0 failures'
+  assert_output_matches '\[ 2\] +1 example, 0 failures'
 }
 
 @test "TEST_QUEUE_SPLIT_GROUPS does not split unsplittable groups" {
