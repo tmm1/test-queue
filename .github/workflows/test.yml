@@ -25,7 +25,7 @@ jobs:
           - { name: cucumber2_4, bats: test/cucumber.bats }
           - { name: minitest4, bats: test/minitest4.bats }
           - { name: minitest5, bats: test/minitest5.bats }
-          - { name: rspec3, bats: test/rspec.bats }
+          - { name: rspec3, bats: test/rspec3.bats }
           - { name: testunit, bats: test/testunit.bats }
 
     steps:
@@ -71,7 +71,7 @@ jobs:
         # Lowest and Latest version.
         ruby: ['2.7', '3.1']
         entry:
-          - { name: rspec2, bats: test/rspec.bats }
+          - { name: rspec2, bats: test/rspec2.bats }
 
     steps:
       - name: checkout

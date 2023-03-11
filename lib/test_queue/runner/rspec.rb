@@ -36,6 +36,11 @@ module TestQueue
         options.parse_options if options.respond_to?(:parse_options)
         options.configure(::RSpec.configuration)
 
+        if ::RSpec.configuration.instance_variable_defined?(:@files_or_directories_to_run) &&
+           ::RSpec.configuration.instance_variable_get(:@files_or_directories_to_run).empty?
+          ::RSpec.configuration.instance_variable_set(:@files_or_directories_to_run, [::RSpec.configuration.default_path])
+        end
+
         ::RSpec.configuration.files_to_run.uniq
       end
 
