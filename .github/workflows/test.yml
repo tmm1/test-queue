@@ -20,7 +20,7 @@ jobs:
       matrix:
         os: [ubuntu]
         # Lowest and Latest version.
-        ruby: ['2.3', '3.1']
+        ruby: ['2.3', '3.0']
 
     steps:
       - name: checkout
