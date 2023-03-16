@@ -1,4 +1,4 @@
-require 'test_queue'
+require_relative '../../test_queue'
 require 'puppet-lint'
 
 module TestQueue

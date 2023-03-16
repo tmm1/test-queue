@@ -1,4 +1,8 @@
 #!/usr/bin/env ruby
+
+$LOAD_PATH.unshift File.expand_path("../lib", __dir__)
+
 require 'test_queue'
 require 'test_queue/runner/testunit'
+
 TestQueue::Runner::TestUnit.new.execute

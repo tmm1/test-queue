@@ -1,9 +1,9 @@
 begin
   require 'minitest'
-  require 'test_queue/runner/minitest5'
+  require_relative '../runner/minitest5'
 rescue LoadError => e
   require 'minitest/unit'
-  require 'test_queue/runner/minitest4'
+  require_relative '../runner/minitest4'
 end
 
 module TestQueue
