@@ -48,12 +48,12 @@ module TestQueue
 
       @procline = $0
 
-      @whitelist = if forced = ENV['TEST_QUEUE_FORCE']
+      @allowlist = if forced = ENV['TEST_QUEUE_FORCE']
                      forced.split(/\s*,\s*/)
                    else
                      []
                    end
-      @whitelist.freeze
+      @allowlist.freeze
 
       all_files = @test_framework.all_suite_files.to_set
       @queue = @stats.all_suites
@@ -61,12 +61,12 @@ module TestQueue
         .sort_by { |suite| -suite.duration }
         .map { |suite| [suite.name, suite.path] }
 
-      if @whitelist.any?
-        @queue.select! { |suite_name, path| @whitelist.include?(suite_name) }
-        @queue.sort_by! { |suite_name, path| @whitelist.index(suite_name) }
+      if @allowlist.any?
+        @queue.select! { |suite_name, path| @allowlist.include?(suite_name) }
+        @queue.sort_by! { |suite_name, path| @allowlist.index(suite_name) }
       end
 
-      @awaited_suites = Set.new(@whitelist)
+      @awaited_suites = Set.new(@allowlist)
       @original_queue = Set.new(@queue).freeze
 
       @workers = {}
@@ -318,9 +318,9 @@ module TestQueue
       # distributes them to remote masters.
       return if relay?
 
-      # No need to discover suites if all whitelisted suites are already
+      # No need to discover suites if all allowlisted suites are already
       # queued.
-      return if @whitelist.any? && @awaited_suites.empty?
+      return if @allowlist.any? && @awaited_suites.empty?
 
       @discovering_suites_pid = fork do
         terminate = false
@@ -346,7 +346,7 @@ module TestQueue
     def awaiting_suites?
       case
       when @awaited_suites.any?
-        # We're waiting to find all the whitelisted suites so we can run them
+        # We're waiting to find all the allowlisted suites so we can run them
         # in the correct order.
         true
       when @queue.empty? && !!@discovering_suites_pid
@@ -359,7 +359,7 @@ module TestQueue
     end
 
     def enqueue_discovered_suite(suite_name, path)
-      if @whitelist.any? && !@whitelist.include?(suite_name)
+      if @allowlist.any? && !@allowlist.include?(suite_name)
         return
       end
 
@@ -377,9 +377,9 @@ module TestQueue
       @queue.unshift [suite_name, path]
 
       if @awaited_suites.delete?(suite_name) && @awaited_suites.empty?
-        # We've found all the whitelisted suites. Sort the queue to match the
-        # whitelist.
-        @queue.sort_by! { |suite_name, path| @whitelist.index(suite_name) }
+        # We've found all the allowlisted suites. Sort the queue to match the
+        # allowlist.
+        @queue.sort_by! { |suite_name, path| @allowlist.index(suite_name) }
 
         kill_suite_discovery_process("INT")
       end

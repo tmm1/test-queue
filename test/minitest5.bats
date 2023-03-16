@@ -27,7 +27,7 @@ teardown() {
   assert_output_contains "MiniTestFailure#test_fail"
 }
 
-@test "TEST_QUEUE_FORCE whitelists certain tests" {
+@test "TEST_QUEUE_FORCE allowlists certain tests" {
   export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep21,MiniTestSleep8"
   run bundle exec minitest-queue ./test/samples/*_minitest5.rb
   assert_status 0
