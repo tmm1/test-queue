@@ -20,7 +20,7 @@ jobs:
       matrix:
         os: [ubuntu]
         # Lowest and Latest version.
-        ruby: ['2.7', '3.0']
+        ruby: ['2.7', '3.1']
         entry:
           - { name: cucumber1-3, bats: test/cucumber.bats }
           - { name: cucumber2-4, bats: test/cucumber.bats }
