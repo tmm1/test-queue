@@ -9,7 +9,7 @@ on:
 jobs:
   main:
     name: >-
-      ${{ matrix.os }} ${{ matrix.ruby }}
+      ${{ matrix.ruby }} ${{ matrix.entry.name }}
     runs-on: ${{ matrix.os }}-latest
     env:
       BUNDLE_GEMFILE: ${{ matrix.gemfile }}
@@ -20,7 +20,15 @@ jobs:
       matrix:
         os: [ubuntu]
         # Lowest and Latest version.
-        ruby: ['2.7', '3.0']
+        ruby: ['2.7', '3.1']
+        entry:
+          - { name: cucumber1-3, bats: test/cucumber.bats }
+          - { name: cucumber2-4, bats: test/cucumber.bats }
+          - { name: minitest4, bats: test/minitest4.bats }
+          - { name: minitest5, bats: test/minitest5.bats }
+          - { name: rspec2, bats: test/rspec.bats }
+          - { name: rspec3, bats: test/rspec.bats }
+          - { name: testunit, bats: test/testunit.bats }
 
     steps:
       - name: checkout
@@ -31,6 +39,12 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
 
       - name: install dependencies
-        run: bundle install --jobs 3 --retry 3 && bundle exec appraisal install
+        run: bundle install --jobs 3 --retry 3
+      - name: setup for Bats
+        run: bundle exec rake setup
       - name: spec
-        run: bundle exec appraisal rake
+        run: bundle exec rake spec
+      - name: install dependencies for ${{ matrix.entry.name }}
+        run: bundle exec appraisal ${{ matrix.entry.name }} bundle install --jobs 3 --retry 3
+      - name: test
+        run: bundle exec appraisal ${{ matrix.entry.name }} vendor/bats/bin/bats ${{ matrix.entry.bats }}
