@@ -23,7 +23,7 @@ end
 appraise "rspec2" do
   # Pin Rake version to Prevent `NoMethodError: undefined method `last_comment'`.
   gem 'rake', '< 11.0'
-  gem 'rspec', '~> 2.13.0'
+  gem 'rspec', '~> 2.99'
 end
 
 appraise "rspec3" do

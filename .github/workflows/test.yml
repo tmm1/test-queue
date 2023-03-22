@@ -12,7 +12,6 @@ jobs:
       ${{ matrix.ruby }} ${{ matrix.entry.name }}
     runs-on: ${{ matrix.os }}-latest
     env:
-      BUNDLE_GEMFILE: ${{ matrix.gemfile }}
       TEST_QUEUE_WORKERS: 2
       TEST_QUEUE_VERBOSE: 1
     strategy:
@@ -20,13 +19,12 @@ jobs:
       matrix:
         os: [ubuntu]
         # Lowest and Latest version.
-        ruby: ['2.7', '3.1']
+        ruby: ['2.7', '3.2']
         entry:
-          - { name: cucumber1-3, bats: test/cucumber.bats }
-          - { name: cucumber2-4, bats: test/cucumber.bats }
+          - { name: cucumber1_3, bats: test/cucumber.bats }
+          - { name: cucumber2_4, bats: test/cucumber.bats }
           - { name: minitest4, bats: test/minitest4.bats }
           - { name: minitest5, bats: test/minitest5.bats }
-          - { name: rspec2, bats: test/rspec.bats }
           - { name: rspec3, bats: test/rspec.bats }
           - { name: testunit, bats: test/testunit.bats }
 
@@ -45,6 +43,51 @@ jobs:
       - name: spec
         run: bundle exec rake spec
       - name: install dependencies for ${{ matrix.entry.name }}
-        run: bundle exec appraisal ${{ matrix.entry.name }} bundle install --jobs 3 --retry 3
+        run: BUNDLE_GEMFILE=gemfiles/${{ matrix.entry.name }}.gemfile bundle install --jobs 3 --retry 3
       - name: test
-        run: bundle exec appraisal ${{ matrix.entry.name }} vendor/bats/bin/bats ${{ matrix.entry.bats }}
+        run: BUNDLE_GEMFILE=gemfiles/${{ matrix.entry.name }}.gemfile vendor/bats/bin/bats ${{ matrix.entry.bats }}
+
+  # RSpec 2 doesn't work with Ruby 3.2:
+  #
+  #   /opt/hostedtoolcache/Ruby/3.2.1/x64/lib/ruby/gems/3.2.0/gems/rspec-core-2.99.2/lib/rspec/core/ruby_project.rb:27:
+  #   in `block in find_first_parent_containing': undefined method `exists?' for File:Class (NoMethodError)
+  #
+  #           ascend_until {|path| File.exists?(File.join(path, dir))}
+  #                                    ^^^^^^^^
+  #   Did you mean?  exist?
+  #
+  # Up to Ruby 3.1 is the supported version for RSpec 2.
+  rspec2:
+    name: >-
+      ${{ matrix.ruby }} ${{ matrix.entry.name }}
+    runs-on: ${{ matrix.os }}-latest
+    env:
+      TEST_QUEUE_WORKERS: 2
+      TEST_QUEUE_VERBOSE: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu]
+        # Lowest and Latest version.
+        ruby: ['2.7', '3.1']
+        entry:
+          - { name: rspec2, bats: test/rspec.bats }
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+
+      - name: install dependencies
+        run: bundle install --jobs 3 --retry 3
+      - name: setup for Bats
+        run: bundle exec rake setup
+      - name: spec
+        run: bundle exec rake spec
+      - name: install dependencies for ${{ matrix.entry.name }}
+        run: BUNDLE_GEMFILE=gemfiles/${{ matrix.entry.name }}.gemfile bundle install --jobs 3 --retry 3
+      - name: test
+        run: BUNDLE_GEMFILE=gemfiles/${{ matrix.entry.name }}.gemfile vendor/bats/bin/bats ${{ matrix.entry.bats }}
