@@ -1,7 +1,7 @@
 load "testlib"
 
 setup() {
-  require_gem "rspec" ">= 2.0"
+  require_gem "rspec" "~> 2.0"
 }
 
 @test "rspec-queue succeeds when all specs pass" {
@@ -43,5 +43,4 @@ setup() {
   run bundle exec rspec-queue ./test/samples/sample_use_shared_example1_spec.rb \
                               ./test/samples/sample_use_shared_example2_spec.rb
   assert_status 0
-
 }
