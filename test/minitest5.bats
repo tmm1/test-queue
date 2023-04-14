@@ -28,11 +28,11 @@ teardown() {
 }
 
 @test "TEST_QUEUE_FORCE allowlists certain tests" {
-  export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep21,MiniTestSleep8"
+  export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep11,MiniTestSleep8"
   run bundle exec minitest-queue ./test/samples/*_minitest5.rb
   assert_status 0
   assert_output_contains "Starting test-queue master"
-  assert_output_contains "MiniTestSleep21"
+  assert_output_contains "MiniTestSleep11"
   assert_output_contains "MiniTestSleep8"
   refute_output_contains "MiniTestSleep9"
 }
@@ -68,7 +68,7 @@ assert_test_queue_force_ordering() {
 }
 
 @test "minitest-queue fails if TEST_QUEUE_FORCE specifies nonexistent tests" {
-  export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep21,DoesNotExist"
+  export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep11,DoesNotExist"
   run bundle exec minitest-queue ./test/samples/*_minitest5.rb
   assert_status 1
   assert_output_contains "Failed to discover DoesNotExist specified in TEST_QUEUE_FORCE"
