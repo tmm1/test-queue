@@ -3,4 +3,5 @@
 Gemfile.lock
 gemfiles/.bundle/
 *.gemfile.lock
+pkg
 vendor
