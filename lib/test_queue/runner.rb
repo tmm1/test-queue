@@ -31,7 +31,7 @@ module TestQueue
     attr_accessor :concurrency, :exit_when_done
     attr_reader :stats
 
-    TOKEN_REGEX = /^TOKEN=(\w+)/
+    TOKEN_REGEX = /\ATOKEN=(\w+)/
 
     def initialize(test_framework, concurrency=nil, socket=nil, relay=nil)
       @test_framework = test_framework
@@ -251,7 +251,7 @@ module TestQueue
 
     def start_master
       if !relay?
-        if @socket =~ /^(?:(.+):)?(\d+)$/
+        if @socket =~ /\A(?:(.+):)?(\d+)\z/
           address = $1 || '0.0.0.0'
           port = $2.to_i
           @socket = "#$1:#$2"
@@ -500,7 +500,7 @@ module TestQueue
           end
 
           case cmd
-          when /^POP (\S+) (\d+)/
+          when /\APOP (\S+) (\d+)/
             hostname = $1
             pid = Integer($2)
             if awaiting_suites?
@@ -510,7 +510,7 @@ module TestQueue
               sock.write(data)
               @assignments[obj] = [hostname, pid]
             end
-          when /^REMOTE MASTER (\d+) ([\w\.-]+)(?: (.+))?/
+          when /\AREMOTE MASTER (\d+) ([\w\.-]+)(?: (.+))?/
             num = $1.to_i
             remote_master = $2
             remote_master_message = $3
@@ -521,15 +521,15 @@ module TestQueue
             message = "*** #{num} workers connected from #{remote_master} after #{Time.now-@start_time}s"
             message << " " + remote_master_message if remote_master_message
             STDERR.puts message
-          when /^WORKER (\d+)/
+          when /\AWORKER (\d+)/
             data = sock.read($1.to_i)
             worker = Marshal.load(data)
             worker_completed(worker)
             remote_workers -= 1
-          when /^NEW SUITE (.+)/
+          when /\ANEW SUITE (.+)/
             suite_name, path = Marshal.load($1)
             enqueue_discovered_suite(suite_name, path)
-          when /^KABOOM/
+          when /\AKABOOM/
             # worker reporting an abnormal number of test failures;
             # stop everything immediately and report the results.
             break

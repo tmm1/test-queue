@@ -8,7 +8,7 @@ module TestQueue
       @suite_stats = []
       @sock = sock
       @filter = filter
-      if @sock =~ /^(.+):(\d+)$/
+      if @sock =~ /\A(.+):(\d+)\z/
         @tcp_address = $1
         @tcp_port = $2.to_i
       end
