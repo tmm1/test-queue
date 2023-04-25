@@ -26,6 +26,7 @@ jobs:
           - { name: minitest4, bats: test/minitest4.bats }
           - { name: minitest5, bats: test/minitest5.bats }
           - { name: rspec3, bats: test/rspec3.bats }
+          - { name: rspec4, bats: test/rspec4.bats }
           - { name: testunit, bats: test/testunit.bats }
 
     steps:

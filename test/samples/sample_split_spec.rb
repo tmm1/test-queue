@@ -1,6 +1,6 @@
 require "rspec"
 
-describe 'SplittableGroup', :no_split => !!ENV["NOSPLIT"] do
+RSpec::describe 'SplittableGroup', :no_split => !!ENV["NOSPLIT"] do
   2.times do |i|
     it "runs test #{i}" do
       # Sleep longer in CI to make the distribution of examples across workers
