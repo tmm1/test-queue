@@ -56,17 +56,24 @@ module TestQueue
   class Runner
     class MiniTest < Runner
       def initialize
-        options = Minitest.process_args ARGV
+        @options = Minitest.process_args ARGV
 
         if Minitest.respond_to?(:seed)
-          Minitest.seed = options[:seed]
+          Minitest.seed = @options[:seed]
           srand Minitest.seed
         end
 
         if ::MiniTest::Test.runnables.any? { |r| r.runnable_methods.any? }
           fail "Do not `require` test files. Pass them via ARGV instead and they will be required as needed."
         end
+
         super(TestFramework::MiniTest.new)
+      end
+
+      def start_master
+        puts "Run options: #{@options[:args]}\n\n"
+
+        super
       end
 
       def run_worker(iterator)
