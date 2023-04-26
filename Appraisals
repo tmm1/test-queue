@@ -30,6 +30,14 @@ appraise "rspec3" do
   gem 'rspec', '~> 3.12'
 end
 
+appraise "rspec4" do
+  gem 'rspec', github: 'rspec/rspec-metagem', branch: '4-0-dev'
+  gem 'rspec-core', github: 'rspec/rspec-core', branch: '4-0-dev'
+  gem 'rspec-expectations', github: 'rspec/rspec-expectations', branch: '4-0-dev'
+  gem 'rspec-mocks', github: 'rspec/rspec-mocks', branch: '4-0-dev'
+  gem 'rspec-support', github: 'rspec/rspec-support', branch: '4-0-dev'
+end
+
 appraise "testunit" do
   gem 'test-unit'
 end

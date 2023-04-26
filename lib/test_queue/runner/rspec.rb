@@ -4,10 +4,10 @@ require 'rspec/core'
 case ::RSpec::Core::Version::STRING.to_i
 when 2
   require_relative 'rspec2'
-when 3
+when 3, 4
   require_relative 'rspec3'
 else
-  fail 'requires rspec version 2 or 3'
+  fail 'requires rspec version 2, 3, or 4'
 end
 
 module TestQueue
