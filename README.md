@@ -104,8 +104,8 @@ in relay mode to connect to the central master. Remote masters must provide a `T
 to match the central master's.
 
 ```console
-$ TEST_QUEUE_RELAY_TOKEN=123 TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec minitest-queue ./test/sample_test.rb
-$ TEST_QUEUE_RELAY_TOKEN=123 TEST_QUEUE_RELAY=0.0.0.0:12345  bundle exec minitest-queue ./test/sample_test.rb
+$ TEST_QUEUE_RELAY_TOKEN=123 TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec minitest-queue ./test/example_test.rb
+$ TEST_QUEUE_RELAY_TOKEN=123 TEST_QUEUE_RELAY=0.0.0.0:12345  bundle exec minitest-queue ./test/example_test.rb
 $ TEST_QUEUE_RELAY_TOKEN=123 ./test-multi.sh
 ```
 

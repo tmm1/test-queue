@@ -13,14 +13,14 @@ teardown() {
 }
 
 @test "minitest-queue (minitest5) succeeds when all tests pass" {
-  run bundle exec minitest-queue ./test/samples/*_minitest5.rb
+  run bundle exec minitest-queue ./test/examples/*_minitest5.rb
   assert_status 0
   assert_output_contains "Starting test-queue master"
 }
 
 @test "minitest-queue (minitest5) fails when a test fails" {
   export FAIL=1
-  run bundle exec minitest-queue ./test/samples/*_minitest5.rb
+  run bundle exec minitest-queue ./test/examples/*_minitest5.rb
   assert_status 1
   assert_output_contains "Starting test-queue master"
   assert_output_contains "1) Failure:"
@@ -29,7 +29,7 @@ teardown() {
 
 @test "TEST_QUEUE_FORCE allowlists certain tests" {
   export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep11,MiniTestSleep8"
-  run bundle exec minitest-queue ./test/samples/*_minitest5.rb
+  run bundle exec minitest-queue ./test/examples/*_minitest5.rb
   assert_status 0
   assert_output_contains "Starting test-queue master"
   assert_output_contains "MiniTestSleep11"
@@ -58,18 +58,18 @@ assert_test_queue_force_ordering() {
 
   # Without stats file
   rm -f .test_queue_stats
-  assert_test_queue_force_ordering ./test/samples/sample_minitest5.rb ./test/samples/sample_minispec.rb
+  assert_test_queue_force_ordering ./test/examples/example_minitest5.rb ./test/examples/example_minispec.rb
   rm -f .test_queue_stats
-  assert_test_queue_force_ordering ./test/samples/sample_minispec.rb ./test/samples/sample_minitest5.rb
+  assert_test_queue_force_ordering ./test/examples/example_minispec.rb ./test/examples/example_minitest5.rb
 
   # With stats file
-  assert_test_queue_force_ordering ./test/samples/sample_minitest5.rb ./test/samples/sample_minispec.rb
-  assert_test_queue_force_ordering ./test/samples/sample_minispec.rb ./test/samples/sample_minitest5.rb
+  assert_test_queue_force_ordering ./test/examples/example_minitest5.rb ./test/examples/example_minispec.rb
+  assert_test_queue_force_ordering ./test/examples/example_minispec.rb ./test/examples/example_minitest5.rb
 }
 
 @test "minitest-queue fails if TEST_QUEUE_FORCE specifies nonexistent tests" {
   export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep11,DoesNotExist"
-  run bundle exec minitest-queue ./test/samples/*_minitest5.rb
+  run bundle exec minitest-queue ./test/examples/*_minitest5.rb
   assert_status 1
   assert_output_contains "Failed to discover DoesNotExist specified in TEST_QUEUE_FORCE"
 }
@@ -77,9 +77,9 @@ assert_test_queue_force_ordering() {
 @test "multi-master central master succeeds when all tests pass" {
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
   export SLEEP_AS_RELAY=1
-  TEST_QUEUE_RELAY=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb || true &
+  TEST_QUEUE_RELAY=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb || true &
   sleep 0.1
-  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb
+  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb
   wait
 
   assert_status 0
@@ -89,9 +89,9 @@ assert_test_queue_force_ordering() {
 @test "multi-master remote master succeeds when all tests pass" {
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
   export SLEEP_AS_MASTER=1
-  TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb || true &
+  TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb || true &
   sleep 0.1
-  TEST_QUEUE_RELAY=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb
+  TEST_QUEUE_RELAY=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb
   wait
 
   assert_status 0
@@ -102,9 +102,9 @@ assert_test_queue_force_ordering() {
   export FAIL=1
   export SLEEP_AS_RELAY=1
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
-  TEST_QUEUE_RELAY=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb || true &
+  TEST_QUEUE_RELAY=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb || true &
   sleep 0.1
-  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb
+  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb
   wait
 
   assert_status 1
@@ -117,9 +117,9 @@ assert_test_queue_force_ordering() {
   export FAIL=1
   export SLEEP_AS_MASTER=1
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
-  TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb || true &
+  TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb || true &
   sleep 0.1
-  TEST_QUEUE_RELAY=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/samples/sample_minitest5.rb
+  TEST_QUEUE_RELAY=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb
   wait
 
   assert_status 1
@@ -130,8 +130,8 @@ assert_test_queue_force_ordering() {
 
 @test "multi-master central master prints out remote master messages" {
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
-  TEST_QUEUE_RELAY=0.0.0.0:12345 TEST_QUEUE_REMOTE_MASTER_MESSAGE="hello from remote master" bundle exec minitest-queue ./test/samples/sample_minitest5.rb &
-  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec minitest-queue ./test/samples/sample_minitest5.rb
+  TEST_QUEUE_RELAY=0.0.0.0:12345 TEST_QUEUE_REMOTE_MASTER_MESSAGE="hello from remote master" bundle exec minitest-queue ./test/examples/example_minitest5.rb &
+  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec minitest-queue ./test/examples/example_minitest5.rb
   wait
 
   assert_status 0
@@ -140,20 +140,20 @@ assert_test_queue_force_ordering() {
 
 @test "recovers from child processes dying in an unorderly way" {
   export KILL=1
-  run bundle exec minitest-queue ./test/samples/sample_minitest5.rb
+  run bundle exec minitest-queue ./test/examples/example_minitest5.rb
   assert_status 1
   assert_output_contains "SIGKILL (signal 9)"
 }
 
 @test "minitest-queue fails when TEST_QUEUE_WORKERS is <= 0" {
   export TEST_QUEUE_WORKERS=0
-  run bundle exec minitest-queue ./test/samples/sample_minitest5.rb
+  run bundle exec minitest-queue ./test/examples/example_minitest5.rb
   assert_status 1
   assert_output_contains "Worker count (0) must be greater than 0"
 }
 
 @test "minitest-queue fails when given a missing test file" {
-  run bundle exec minitest-queue ./test/samples/does_not_exist.rb
+  run bundle exec minitest-queue ./test/examples/does_not_exist.rb
   assert_status 1
   assert_output_contains "Aborting: Discovering suites failed"
 }
@@ -166,13 +166,13 @@ assert_test_queue_force_ordering() {
 }
 
 @test "minitest-queue handles test file being deleted" {
-  cp test/samples/sample_mini{test5,spec}.rb $SCRATCH
+  cp test/examples/example_mini{test5,spec}.rb $SCRATCH
 
   run bundle exec minitest-queue $SCRATCH/*
   assert_status 0
   assert_output_contains "Meme::when asked about blending possibilities"
 
-  rm $SCRATCH/sample_minispec.rb
+  rm $SCRATCH/example_minispec.rb
 
   run bundle exec minitest-queue $SCRATCH/*
   assert_status 0
@@ -180,15 +180,15 @@ assert_test_queue_force_ordering() {
 }
 
 @test "minitest-queue handles suites changing inside a file" {
-  cp test/samples/sample_minispec.rb $SCRATCH
+  cp test/examples/example_minispec.rb $SCRATCH
 
-  run bundle exec minitest-queue $SCRATCH/sample_minispec.rb
+  run bundle exec minitest-queue $SCRATCH/example_minispec.rb
   assert_status 0
   assert_output_contains "Meme::when asked about blending possibilities"
 
-  sed -i'' -e 's/Meme/Meme2/g' $SCRATCH/sample_minispec.rb
+  sed -i'' -e 's/Meme/Meme2/g' $SCRATCH/example_minispec.rb
 
-  run bundle exec minitest-queue $SCRATCH/sample_minispec.rb
+  run bundle exec minitest-queue $SCRATCH/example_minispec.rb
   assert_status 0
   assert_output_contains "Meme2::when asked about blending possibilities"
 }

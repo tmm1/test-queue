@@ -3,7 +3,7 @@ require_relative '../runner'
 
 module TestQueue
   class Runner
-    class Sample < Runner
+    class Example < Runner
       def spawn_workers
         puts "Spawning #@concurrency workers"
         super
@@ -32,7 +32,7 @@ module TestQueue
 end
 
 if __FILE__ == $0
-  TestQueue::Runner::Sample.new(Array(1..10)).execute
+  TestQueue::Runner::Example.new(Array(1..10)).execute
 end
 
 __END__
