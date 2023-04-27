@@ -42,14 +42,14 @@ the workload and relay results back to a central master.
 
 ## Usage
 
-test-queue bundles `testunit-queue`, `minitest-queue` and `rspec-queue` binaries which can be used directly:
+test-queue bundles `testunit-queue`, `minitest-queue`, and `rspec-queue` binaries which can be used directly:
 
 ```console
 $ minitest-queue $(find test/ -name \*_test.rb)
 $ rspec-queue --format progress spec
 ```
 
-But the underlying `TestQueue::Runner::TestUnit`, `TestQueue::Runner::MiniTest` and `TestQueue::Runner::RSpec` are
+But the underlying `TestQueue::Runner::TestUnit`, `TestQueue::Runner::MiniTest`, and `TestQueue::Runner::RSpec` are
 built to be subclassed by your application. I recommend checking a new
 executable into your project using one of these superclasses.
 
