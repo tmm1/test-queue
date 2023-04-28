@@ -1,12 +1,10 @@
 # frozen_string_literal: true
 
-begin
-  require 'minitest'
-  require_relative '../runner/minitest5'
-rescue LoadError
-  require 'minitest/unit'
-  require_relative '../runner/minitest4'
-end
+require 'minitest'
+
+raise 'requires Minitest version 5' unless Minitest::VERSION.to_i == 5
+
+require_relative '../runner/minitest5'
 
 module TestQueue
   class Runner

@@ -23,7 +23,6 @@ jobs:
         entry:
           - { name: cucumber1_3, bats: test/cucumber.bats }
           - { name: cucumber2_4, bats: test/cucumber.bats }
-          - { name: minitest4, bats: test/minitest4.bats }
           - { name: minitest5, bats: test/minitest5.bats }
           - { name: rspec3, bats: test/rspec3.bats }
           - { name: rspec4, bats: test/rspec4.bats }

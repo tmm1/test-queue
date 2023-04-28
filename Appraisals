@@ -12,11 +12,6 @@ appraise 'cucumber2-4' do
   gem 'rake', '< 11.0'
 end
 
-appraise 'minitest4' do
-  gem 'rake'
-  gem 'minitest', '~> 4.7'
-end
-
 appraise 'minitest5' do
   gem 'rake'
   gem 'minitest', '5.10.0'
