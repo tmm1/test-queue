@@ -18,6 +18,21 @@ teardown() {
   assert_output_contains "Starting test-queue master"
 }
 
+@test "minitest-queue (minitest5) succeeds when all tests pass with the --seed option" {
+  run bundle exec minitest-queue --seed 1234 ./test/samples/*_minitest5.rb
+  assert_status 0
+  assert_output_contains "Run options: --seed 1234"
+  assert_output_contains "Starting test-queue master"
+}
+
+@test "minitest-queue (minitest5) succeeds when all tests pass with the SEED env variable" {
+  export SEED=1234
+  run bundle exec minitest-queue ./test/samples/*_minitest5.rb
+  assert_status 0
+  assert_output_contains "Run options: --seed 1234"
+  assert_output_contains "Starting test-queue master"
+}
+
 @test "minitest-queue (minitest5) fails when a test fails" {
   export FAIL=1
   run bundle exec minitest-queue ./test/examples/*_minitest5.rb
