@@ -1,13 +1,13 @@
 require 'minitest/autorun'
 
-class MiniTestEqual < MiniTest::Test
+class MinitestEqual < Minitest::Test
   def test_equal
     assert_equal 1, 1
   end
 end
 
 30.times do |i|
-  Object.const_set("MiniTestSleep#{i}", Class.new(MiniTest::Test) do
+  Object.const_set("MinitestSleep#{i}", Class.new(Minitest::Test) do
     define_method('test_sleep') do
       start = Time.now
       sleep(0.25)
@@ -17,7 +17,7 @@ end
 end
 
 if ENV["FAIL"]
-  class MiniTestFailure < MiniTest::Test
+  class MinitestFailure < Minitest::Test
     def test_fail
       assert_equal 0, 1
     end
@@ -25,7 +25,7 @@ if ENV["FAIL"]
 end
 
 if ENV["KILL"]
-  class MiniTestKilledFailure < MiniTest::Test
+  class MinitestKilledFailure < Minitest::Test
     def test_kill
       Process.kill(9, $$)
     end

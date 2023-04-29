@@ -49,7 +49,7 @@ $ minitest-queue $(find test/ -name \*_test.rb)
 $ rspec-queue --format progress spec
 ```
 
-But the underlying `TestQueue::Runner::TestUnit`, `TestQueue::Runner::MiniTest`, and `TestQueue::Runner::RSpec` are
+But the underlying `TestQueue::Runner::TestUnit`, `TestQueue::Runner::Minitest`, and `TestQueue::Runner::RSpec` are
 built to be subclassed by your application. I recommend checking a new
 executable into your project using one of these superclasses.
 
@@ -66,7 +66,7 @@ runner to reset any global state.
 ``` ruby
 #!/usr/bin/env ruby
 
-class MyAppTestRunner < TestQueue::Runner::MiniTest
+class MyAppTestRunner < TestQueue::Runner::Minitest
   def after_fork(num)
     # use separate mysql database (we assume it exists and has the right schema already)
     ActiveRecord::Base.configurations.configs_for(env_name: 'test', name: 'primary').database << num.to_s

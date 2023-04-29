@@ -8,7 +8,7 @@ end
 
 module TestQueue
   class Runner
-    class MiniTest < Runner
+    class Minitest < Runner
       def summarize_worker(worker)
         worker.summary = worker.lines.grep(/, \d+ errors?, /).first
         failures  = worker.lines.select{ |line|

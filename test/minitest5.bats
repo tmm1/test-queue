@@ -39,17 +39,17 @@ teardown() {
   assert_status 1
   assert_output_contains "Starting test-queue master"
   assert_output_contains "1) Failure:"
-  assert_output_contains "MiniTestFailure#test_fail"
+  assert_output_contains "MinitestFailure#test_fail"
 }
 
 @test "TEST_QUEUE_FORCE allowlists certain tests" {
-  export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep11,MiniTestSleep8"
+  export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MinitestSleep11,MinitestSleep8"
   run bundle exec minitest-queue ./test/examples/*_minitest5.rb
   assert_status 0
   assert_output_contains "Starting test-queue master"
-  assert_output_contains "MiniTestSleep11"
-  assert_output_contains "MiniTestSleep8"
-  refute_output_contains "MiniTestSleep9"
+  assert_output_contains "MinitestSleep11"
+  assert_output_contains "MinitestSleep8"
+  refute_output_contains "MinitestSleep9"
 }
 
 assert_test_queue_force_ordering() {
@@ -69,7 +69,7 @@ assert_test_queue_force_ordering() {
 }
 
 @test "TEST_QUEUE_FORCE ensures test ordering" {
-  export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="Meme::when asked about cheeseburgers,MiniTestEqual"
+  export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="Meme::when asked about cheeseburgers,MinitestEqual"
 
   # Without stats file
   rm -f .test_queue_stats
@@ -83,7 +83,7 @@ assert_test_queue_force_ordering() {
 }
 
 @test "minitest-queue fails if TEST_QUEUE_FORCE specifies nonexistent tests" {
-  export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MiniTestSleep11,DoesNotExist"
+  export TEST_QUEUE_WORKERS=1 TEST_QUEUE_FORCE="MinitestSleep11,DoesNotExist"
   run bundle exec minitest-queue ./test/examples/*_minitest5.rb
   assert_status 1
   assert_output_contains "Failed to discover DoesNotExist specified in TEST_QUEUE_FORCE"
@@ -125,7 +125,7 @@ assert_test_queue_force_ordering() {
   assert_status 1
   assert_output_contains "Starting test-queue master"
   assert_output_contains "1) Failure:"
-  assert_output_contains "MiniTestFailure#test_fail"
+  assert_output_contains "MinitestFailure#test_fail"
 }
 
 @test "multi-master remote master fails when a test fails" {
@@ -140,7 +140,7 @@ assert_test_queue_force_ordering() {
   assert_status 1
   assert_output_contains "Starting test-queue master"
   assert_output_contains "1) Failure:"
-  assert_output_contains "MiniTestFailure#test_fail"
+  assert_output_contains "MinitestFailure#test_fail"
 }
 
 @test "multi-master central master prints out remote master messages" {

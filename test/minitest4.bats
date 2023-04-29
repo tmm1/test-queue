@@ -16,7 +16,7 @@ setup() {
   assert_status 1
   assert_output_contains "Starting test-queue master"
   assert_output_contains "1) Failure:"
-  assert_output_contains "MiniTestFailure#test_fail"
+  assert_output_contains "MinitestFailure#test_fail"
 }
 
 @test "minitest-queue succeeds when all specs pass" {
