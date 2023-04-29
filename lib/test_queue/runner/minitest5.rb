@@ -1,6 +1,6 @@
 require_relative '../runner'
 
-module MiniTest
+module Minitest
   def self.__run reporter, options
     suites = Runnable.runnables
     suites.map { |suite| suite.run reporter, options }
@@ -54,20 +54,19 @@ end
 
 module TestQueue
   class Runner
-    class MiniTest < Runner
+    class Minitest < Runner
       def initialize
-        @options = Minitest.process_args ARGV
+        @options = ::Minitest.process_args ARGV
 
-        if Minitest.respond_to?(:seed)
-          Minitest.seed = @options[:seed]
-          srand Minitest.seed
+        if ::Minitest.respond_to?(:seed)
+          ::Minitest.seed = @options[:seed]
+          srand ::Minitest.seed
         end
 
-        if ::MiniTest::Test.runnables.any? { |r| r.runnable_methods.any? }
+        if ::Minitest::Test.runnables.any? { |r| r.runnable_methods.any? }
           fail "Do not `require` test files. Pass them via ARGV instead and they will be required as needed."
         end
-
-        super(TestFramework::MiniTest.new)
+        super(TestFramework::Minitest.new)
       end
 
       def start_master
@@ -77,25 +76,27 @@ module TestQueue
       end
 
       def run_worker(iterator)
-        ::MiniTest::Test.runnables = iterator
-        ::MiniTest.run ? 0 : 1
+        ::Minitest::Test.runnables = iterator
+        ::Minitest.run ? 0 : 1
       end
     end
+    MiniTest = Minitest # For compatibility with test-queue 0.7.0 and earlier.
   end
 
   class TestFramework
-    class MiniTest < TestFramework
+    class Minitest < TestFramework
       def all_suite_files
         ARGV
       end
 
       def suites_from_file(path)
-        ::MiniTest::Test.reset
+        ::Minitest::Test.reset
         require File.absolute_path(path)
-        ::MiniTest::Test.runnables
+        ::Minitest::Test.runnables
           .reject { |s| s.runnable_methods.empty? }
           .map { |s| [s.name, s] }
       end
     end
+    MiniTest = Minitest # For compatibility with test-queue 0.7.0 and earlier.
   end
 end

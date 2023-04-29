@@ -5,4 +5,4 @@ $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 require 'test_queue'
 require 'test_queue/runner/minitest'
 
-TestQueue::Runner::MiniTest.new.execute
+TestQueue::Runner::Minitest.new.execute
