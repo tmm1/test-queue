@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module TestQueue
   # This class provides an abstraction over the various test frameworks we
   # support. The framework-specific subclasses are defined in the various

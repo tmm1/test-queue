@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 Given(/^a$/) do
   sleep 0.10
 end
@@ -7,7 +9,7 @@ When(/^b$/) do
 end
 
 When(/^bad$/) do
-  if ENV["FAIL"]
+  if ENV['FAIL']
     1.should == 0
   else
     1.should == 1

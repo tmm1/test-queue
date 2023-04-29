@@ -1,6 +1,8 @@
-if !IO.respond_to?(:binread)
+# frozen_string_literal: true
+
+unless IO.respond_to?(:binread)
   class << IO
-    alias :binread :read
+    alias binread read
   end
 end
 

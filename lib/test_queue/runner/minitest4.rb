@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative '../runner'
 require 'set'
 require 'stringio'
@@ -31,11 +33,11 @@ class MiniTestQueueRunner < MiniTest::Unit
     ret = super
     diff = Time.now - start
 
-    output.puts("  <%.3f>" % diff)
+    output.puts('  <%.3f>' % diff)
     ret
   end
 
-  self.runner = self.new
+  self.runner = new
   self.output = StringIO.new
 end
 
@@ -44,7 +46,7 @@ class MiniTest::Unit::TestCase
     attr_accessor :test_suites
 
     def original_test_suites
-      @@test_suites.keys.reject{ |s| s.test_methods.empty? }
+      @@test_suites.keys.reject { |s| s.test_methods.empty? }
     end
   end
 
@@ -58,8 +60,9 @@ module TestQueue
     class Minitest < Runner
       def initialize
         if ::MiniTest::Unit::TestCase.original_test_suites.any?
-          fail "Do not `require` test files. Pass them via ARGV instead and they will be required as needed."
+          raise 'Do not `require` test files. Pass them via ARGV instead and they will be required as needed.'
         end
+
         super(TestFramework::Minitest.new)
       end
 

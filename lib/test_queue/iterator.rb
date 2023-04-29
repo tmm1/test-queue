@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 module TestQueue
   class Iterator
     attr_reader :sock
 
-    def initialize(test_framework, sock, filter=nil, run_token:, early_failure_limit: nil)
+    def initialize(test_framework, sock, filter = nil, run_token:, early_failure_limit: nil)
       @test_framework = test_framework
       @done = false
       @suite_stats = []
@@ -18,29 +20,34 @@ module TestQueue
     end
 
     def each
-      fail "already used this iterator. previous caller: #@done" if @done
+      raise "already used this iterator. previous caller: #{@done}" if @done
 
       procline = $0
 
-      while true
+      loop do
         # If we've hit too many failures in one worker, assume the entire
         # test suite is broken, and notify master so the run
         # can be immediately halted.
         if @early_failure_limit && @failures >= @early_failure_limit
-          connect_to_master("KABOOM")
+          connect_to_master('KABOOM')
           break
         else
           client = connect_to_master("POP #{Socket.gethostname} #{Process.pid}")
         end
         break if client.nil?
-        _r, _w, e = IO.select([client], nil, [client], nil)
-        break if !e.empty?
 
-        if data = client.read(65536)
+        # rubocop:disable Lint/IncompatibleIoSelectWithFiberScheduler
+        # This false positive will be resolved by https://github.com/rubocop/rubocop/pull/11830.
+        _r, _w, e = IO.select([client], nil, [client], nil)
+        # rubocop:enable Lint/IncompatibleIoSelectWithFiberScheduler
+        break unless e.empty?
+
+        if (data = client.read(65536))
           client.close
           item = Marshal.load(data)
           break if item.nil? || item.empty?
-          if item == "WAIT"
+
+          if item == 'WAIT'
             $0 = "#{procline} - Waiting for work"
             sleep 0.1
             next
@@ -54,7 +61,7 @@ module TestQueue
           $0 = "#{procline} - #{suite.respond_to?(:description) ? suite.description : suite}"
           start = Time.now
           if @filter
-            @filter.call(suite){ yield suite }
+            @filter.call(suite) { yield suite }
           else
             yield suite
           end
@@ -65,10 +72,11 @@ module TestQueue
         end
       end
     rescue Errno::ENOENT, Errno::ECONNRESET, Errno::ECONNREFUSED
+      # noop
     ensure
       $0 = procline
-      @done = caller.first
-      File.open("/tmp/test_queue_worker_#{$$}_suites", "wb") do |f|
+      @done = caller(1..1).first
+      File.open("/tmp/test_queue_worker_#{$$}_suites", 'wb') do |f|
         Marshal.dump(@suite_stats, f)
       end
     end
@@ -98,8 +106,8 @@ module TestQueue
       suite = @loaded_suites[suite_name]
       return suite if suite
 
-      @test_framework.suites_from_file(path).each do |name, suite|
-        @loaded_suites[name] = suite
+      @test_framework.suites_from_file(path).each do |name, suite_from_file|
+        @loaded_suites[name] = suite_from_file
       end
       @loaded_suites[suite_name]
     end

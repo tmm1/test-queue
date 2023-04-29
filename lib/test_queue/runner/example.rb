@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative '../../test_queue'
 require_relative '../runner'
 
@@ -5,7 +7,7 @@ module TestQueue
   class Runner
     class Example < Runner
       def spawn_workers
-        puts "Spawning #@concurrency workers"
+        puts "Spawning #{@concurrency} workers"
         super
       end
 
@@ -24,7 +26,7 @@ module TestQueue
       end
 
       def summarize_worker(worker)
-        worker.summary  = worker.output.scan(/^\s*(\d+)/).join(', ')
+        worker.summary = worker.output.scan(/^\s*(\d+)/).join(', ')
         worker.failure_output = ''
       end
     end

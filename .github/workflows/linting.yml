@@ -1,0 +1,23 @@
+name: Linting
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  main:
+    name: RuboCop
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Ruby 2.7
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+      - name: Build and run RuboCop
+        run: |
+          bundle install --jobs 4 --retry 3
+          bundle exec rubocop

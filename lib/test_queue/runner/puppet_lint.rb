@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative '../../test_queue'
 require 'puppet-lint'
 
@@ -6,7 +8,7 @@ module TestQueue
     class PuppetLint < Runner
       def run_worker(iterator)
         errors = 0
-        linter =  PuppetLint.new
+        linter = PuppetLint.new
         iterator.each do |file|
           puts "Evaluating #{file}"
           linter.file = file
@@ -19,9 +21,9 @@ module TestQueue
       def summarize_worker(worker)
         lines = worker.lines
 
-        files    = lines.select{ |line| line =~ /^Evaluating/ }
-        errors   = lines.select{ |line| line =~ /^ERROR/ }
-        warnings = lines.select{ |line| line =~ /^WARNING/ }
+        files    = lines.grep(/^Evaluating/)
+        errors   = lines.grep(/^ERROR/)
+        warnings = lines.grep(/^WARNING/)
 
         worker.summary = "#{files.size} files, #{warnings.size} warnings, #{errors.size} errors"
         worker.failure_output = errors.join("\n")
