@@ -1,0 +1,122 @@
+require:
+  - rubocop-performance
+
+AllCops:
+  TargetRubyVersion: 2.7
+  DisabledByDefault: true
+  NewCops: enable
+  SuggestExtensions: false
+
+Bundler:
+  Enabled: true
+
+Gemspec:
+  Enabled: true
+
+Layout:
+  Enabled: true
+
+Layout/LineLength:
+  Enabled: false
+
+Lint:
+  Enabled: true
+
+Lint/FlipFlop:
+  Enabled: false
+
+# This cop is practically style, not lint. And this rule is unexpected.
+Lint/AmbiguousOperatorPrecedence:
+  Enabled: false
+
+Performance:
+  Enabled: true
+
+Performance/Casecmp:
+  Enabled: false
+
+Security:
+  Enabled: true
+
+# `Marshal.load` is only used to deserialize data that has been serialized internally,
+# and not for deserializing data from external sources.
+Security/MarshalLoad:
+  Enabled: false
+
+Style/Alias:
+  Enabled: true
+
+Style/ColonMethodCall:
+  Enabled: true
+
+Style/EmptyCaseCondition:
+  Enabled: true
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+
+Style/HashSyntax:
+  Enabled: true
+
+Style/InfiniteLoop:
+  Enabled: true
+
+Style/MethodDefParentheses:
+  Enabled: true
+
+Style/NegatedIf:
+  Enabled: true
+
+Style/GlobalStdStream:
+  Enabled: true
+
+Style/PreferredHashMethods:
+  Enabled: true
+
+Style/RedundantBegin:
+  Enabled: true
+
+Style/RedundantConstantBase:
+  Enabled: true
+
+Style/RedundantParentheses:
+  Enabled: true
+
+Style/RedundantRegexpEscape:
+  Enabled: true
+
+Style/RedundantReturn:
+  Enabled: true
+
+Style/RedundantSelf:
+  Enabled: true
+
+Style/SafeNavigation:
+  Enabled: true
+
+Style/SelectByRegexp:
+  Enabled: true
+
+Style/Semicolon:
+  Enabled: true
+
+Style/SignalException:
+  Enabled: true
+
+Style/SingleLineMethods:
+  Enabled: true
+
+Style/StderrPuts:
+  Enabled: true
+
+Style/StringLiterals:
+  Enabled: true
+
+Style/StringLiteralsInInterpolation:
+  Enabled: true
+
+Style/TrailingCommaInArrayLiteral:
+  Enabled: true
+
+Style/VariableInterpolation:
+  Enabled: true

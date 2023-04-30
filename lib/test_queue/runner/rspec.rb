@@ -1,13 +1,15 @@
+# frozen_string_literal: true
+
 require_relative '../runner'
 require 'rspec/core'
 
-case ::RSpec::Core::Version::STRING.to_i
+case RSpec::Core::Version::STRING.to_i
 when 2
   require_relative 'rspec2'
 when 3, 4
   require_relative 'rspec3'
 else
-  fail 'requires rspec version 2, 3, or 4'
+  raise 'requires rspec version 2, 3, or 4'
 end
 
 module TestQueue
@@ -23,7 +25,7 @@ module TestQueue
       end
 
       def summarize_worker(worker)
-        worker.summary  = worker.lines.grep(/ examples?, /).first
+        worker.summary = worker.lines.grep(/ examples?, /).first
         worker.failure_output = worker.output[/^Failures:\n\n(.*)\n^Finished/m, 1]
       end
     end
@@ -77,6 +79,7 @@ module TestQueue
 
       def split_groups?
         return @split_groups if defined?(@split_groups)
+
         @split_groups = ENV['TEST_QUEUE_SPLIT_GROUPS'] && ENV['TEST_QUEUE_SPLIT_GROUPS'].strip.downcase == 'true'
       end
     end

@@ -1,6 +1,8 @@
+# frozen_string_literal: true
+
 class ::RSpec::Core::ExampleGroup
   def self.failure_count
-    examples.map {|e| e.execution_result.status == "failed"}.length
+    examples.map { |e| e.execution_result.status == 'failed' }.length
   end
 end
 
@@ -9,13 +11,11 @@ module RSpec::Core
   unless Configuration.method_defined?(:with_suite_hooks)
     class Configuration
       def with_suite_hooks
-        begin
-          hook_context = SuiteHookContext.new
-          hooks.run(:before, :suite, hook_context)
-          yield
-        ensure
-          hooks.run(:after, :suite, hook_context)
-        end
+        hook_context = SuiteHookContext.new
+        hooks.run(:before, :suite, hook_context)
+        yield
+      ensure
+        hooks.run(:after, :suite, hook_context)
       end
     end
   end
@@ -41,14 +41,14 @@ module RSpec::Core
               print "    #{g.description}: "
             end
             ret = g.run(reporter)
-            diff = Time.now-start
-            puts("  <%.3f>" % diff)
+            diff = Time.now - start
+            puts('  <%.3f>' % diff)
 
             ret
           }.all? ? 0 : @configuration.failure_exit_code
         end
       end
     end
-    alias_method :run_each, :run_specs
+    alias run_each run_specs
   end
 end

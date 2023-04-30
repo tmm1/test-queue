@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'cucumber'
 require 'cucumber/rspec/disable_option_parser'
 require 'cucumber/cli/main'
@@ -24,6 +26,7 @@ module Cucumber
       module InjectableFeatures
         def features
           return @features if defined?(@features)
+
           super
         end
 

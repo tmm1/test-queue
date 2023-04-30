@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'set'
 require 'socket'
 require 'fileutils'
@@ -33,7 +35,7 @@ module TestQueue
 
     TOKEN_REGEX = /\ATOKEN=(\w+)/
 
-    def initialize(test_framework, concurrency=nil, socket=nil, relay=nil)
+    def initialize(test_framework, concurrency = nil, socket = nil, relay = nil)
       @test_framework = test_framework
       @stats = Stats.new(stats_file)
 
@@ -48,7 +50,7 @@ module TestQueue
 
       @procline = $0
 
-      @allowlist = if forced = ENV['TEST_QUEUE_FORCE']
+      @allowlist = if (forced = ENV['TEST_QUEUE_FORCE'])
                      forced.split(/\s*,\s*/)
                    else
                      []
@@ -57,13 +59,13 @@ module TestQueue
 
       all_files = @test_framework.all_suite_files.to_set
       @queue = @stats.all_suites
-        .select { |suite| all_files.include?(suite.path) }
-        .sort_by { |suite| -suite.duration }
-        .map { |suite| [suite.name, suite.path] }
+                     .select { |suite| all_files.include?(suite.path) }
+                     .sort_by { |suite| -suite.duration }
+                     .map { |suite| [suite.name, suite.path] }
 
       if @allowlist.any?
-        @queue.select! { |suite_name, path| @allowlist.include?(suite_name) }
-        @queue.sort_by! { |suite_name, path| @allowlist.index(suite_name) }
+        @queue.select! { |suite_name, _path| @allowlist.include?(suite_name) }
+        @queue.sort_by! { |suite_name, _path| @allowlist.index(suite_name) }
       end
 
       @awaited_suites = Set.new(@allowlist)
@@ -72,44 +74,32 @@ module TestQueue
       @workers = {}
       @completed = []
 
-      @concurrency =
-        concurrency ||
-        (ENV['TEST_QUEUE_WORKERS'] && ENV['TEST_QUEUE_WORKERS'].to_i) ||
-        if File.exist?('/proc/cpuinfo')
-          File.read('/proc/cpuinfo').split("\n").grep(/processor/).size
-        elsif RUBY_PLATFORM =~ /darwin/
-          `/usr/sbin/sysctl -n hw.activecpu`.to_i
-        else
-          2
-        end
+      @concurrency = concurrency || ENV['TEST_QUEUE_WORKERS']&.to_i ||
+                     if File.exist?('/proc/cpuinfo')
+                       File.read('/proc/cpuinfo').split("\n").grep(/processor/).size
+                     elsif RUBY_PLATFORM.include?('darwin')
+                       `/usr/sbin/sysctl -n hw.activecpu`.to_i
+                     else
+                       2
+                     end
       unless @concurrency > 0
         raise ArgumentError, "Worker count (#{@concurrency}) must be greater than 0"
       end
 
-      @relay_connection_timeout =
-        (ENV['TEST_QUEUE_RELAY_TIMEOUT'] && ENV['TEST_QUEUE_RELAY_TIMEOUT'].to_i) ||
-        30
-
+      @relay_connection_timeout = ENV['TEST_QUEUE_RELAY_TIMEOUT']&.to_i || 30
       @run_token = ENV['TEST_QUEUE_RELAY_TOKEN'] || SecureRandom.hex(8)
+      @socket = socket || ENV['TEST_QUEUE_SOCKET'] || "/tmp/test_queue_#{$$}_#{object_id}.sock"
+      @relay = relay || ENV['TEST_QUEUE_RELAY']
 
-      @socket =
-        socket ||
-        ENV['TEST_QUEUE_SOCKET'] ||
-        "/tmp/test_queue_#{$$}_#{object_id}.sock"
-
-      @relay =
-        relay ||
-        ENV['TEST_QUEUE_RELAY']
-
-      @remote_master_message = if ENV.has_key?("TEST_QUEUE_REMOTE_MASTER_MESSAGE")
-                                 ENV["TEST_QUEUE_REMOTE_MASTER_MESSAGE"]
-                               elsif ENV.has_key?("TEST_QUEUE_SLAVE_MESSAGE")
-                                 warn("`TEST_QUEUE_SLAVE_MESSAGE` is deprecated. Use `TEST_QUEUE_REMOTE_MASTER_MESSAGE` instead.")
-                                 ENV["TEST_QUEUE_SLAVE_MESSAGE"]
+      @remote_master_message = if ENV.key?('TEST_QUEUE_REMOTE_MASTER_MESSAGE')
+                                 ENV['TEST_QUEUE_REMOTE_MASTER_MESSAGE']
+                               elsif ENV.key?('TEST_QUEUE_SLAVE_MESSAGE')
+                                 warn('`TEST_QUEUE_SLAVE_MESSAGE` is deprecated. Use `TEST_QUEUE_REMOTE_MASTER_MESSAGE` instead.')
+                                 ENV['TEST_QUEUE_SLAVE_MESSAGE']
                                end
 
       if @relay == @socket
-        STDERR.puts "*** Detected TEST_QUEUE_RELAY == TEST_QUEUE_SOCKET. Disabling relay mode."
+        warn '*** Detected TEST_QUEUE_RELAY == TEST_QUEUE_SOCKET. Disabling relay mode.'
         @relay = nil
       elsif @relay
         @queue = []
@@ -144,7 +134,7 @@ module TestQueue
 
     def summarize_internal
       puts
-      puts "==> Summary (#{@completed.size} workers in %.4fs)" % (Time.now-@start_time)
+      puts "==> Summary (#{@completed.size} workers in %.4fs)" % (Time.now - @start_time)
       puts
 
       estatus = 0
@@ -167,9 +157,9 @@ module TestQueue
 
         summarize_worker(worker)
 
-        @failures << worker.failure_output if worker.failure_output
+        @failures += worker.failure_output if worker.failure_output
 
-        puts "    [%2d] %60s      %4d suites in %.4fs      (%s %s)" % [
+        puts '    [%2d] %60s      %4d suites in %.4fs      (%s %s)' % [
           worker.num,
           worker.summary,
           worker.suites.size,
@@ -181,16 +171,16 @@ module TestQueue
 
       unless @failures.empty?
         puts
-        puts "==> Failures"
+        puts '==> Failures'
         puts
         puts @failures
       end
 
-      if !relay?
+      unless relay?
         unless @discovered_suites.empty?
           estatus += 1
           puts
-          puts "The following suites were discovered but were not run:"
+          puts 'The following suites were discovered but were not run:'
           puts
 
           @discovered_suites.sort.each do |suite_name, path|
@@ -200,7 +190,7 @@ module TestQueue
         unless unassigned_suites.empty?
           estatus += 1
           puts
-          puts "The following suites were not discovered but were run anyway:"
+          puts 'The following suites were not discovered but were run anyway:'
           puts
           unassigned_suites.sort.each do |suite_name, path|
             puts "#{suite_name} - #{path}"
@@ -209,7 +199,7 @@ module TestQueue
         unless misrun_suites.empty?
           estatus += 1
           puts
-          puts "The following suites were run on the wrong workers:"
+          puts 'The following suites were run on the wrong workers:'
           puts
           misrun_suites.each do |suite_name, path, target_host, target_pid, actual_host, actual_pid|
             puts "#{suite_name} - #{path}: #{actual_host} (#{actual_pid}) - assigned to #{target_host} (#{target_pid})"
@@ -223,7 +213,7 @@ module TestQueue
 
       summarize
 
-      estatus = @completed.inject(0){ |s, worker| s + (worker.status.exitstatus || 1)}
+      estatus = @completed.inject(0) { |s, worker| s + (worker.status.exitstatus || 1) }
       [estatus, 255].min
     end
 
@@ -231,8 +221,7 @@ module TestQueue
     end
 
     def stats_file
-      ENV['TEST_QUEUE_STATS'] ||
-      '.test_queue_stats'
+      ENV['TEST_QUEUE_STATS'] || '.test_queue_stats'
     end
 
     def execute_internal
@@ -250,19 +239,19 @@ module TestQueue
     end
 
     def start_master
-      if !relay?
+      unless relay?
         if @socket =~ /\A(?:(.+):)?(\d+)\z/
           address = $1 || '0.0.0.0'
           port = $2.to_i
-          @socket = "#$1:#$2"
+          @socket = "#{$1}:#{$2}"
           @server = TCPServer.new(address, port)
         else
-          FileUtils.rm(@socket) if File.exist?(@socket)
+          FileUtils.rm_f(@socket)
           @server = UNIXServer.new(@socket)
         end
       end
 
-      desc = "test-queue master (#{relay?? "relaying to #{@relay}" : @socket})"
+      desc = "test-queue master (#{relay? ? "relaying to #{@relay}" : @socket})"
       puts "Starting #{desc}"
       $0 = "#{desc} - #{@procline}"
     end
@@ -271,19 +260,19 @@ module TestQueue
       return unless relay?
 
       sock = connect_to_relay
-      message = @remote_master_message ? " #{@remote_master_message}" : ""
-      message.gsub!(/(\r|\n)/, "") # Our "protocol" is newline-separated
+      message = @remote_master_message ? " #{@remote_master_message}" : ''
+      message = message.gsub(/(\r|\n)/, '') # Our "protocol" is newline-separated
       sock.puts("TOKEN=#{@run_token}")
       sock.puts("REMOTE MASTER #{@concurrency} #{Socket.gethostname} #{message}")
       response = sock.gets.strip
-      unless response == "OK"
-        STDERR.puts "*** Got non-OK response from master: #{response}"
+      unless response == 'OK'
+        warn "*** Got non-OK response from master: #{response}"
         sock.close
         exit! 1
       end
       sock.close
     rescue Errno::ECONNREFUSED
-      STDERR.puts "*** Unable to connect to relay #{@relay}. Aborting.."
+      warn "*** Unable to connect to relay #{@relay}. Aborting..."
       exit! 1
     end
 
@@ -297,12 +286,12 @@ module TestQueue
 
     def spawn_workers
       @concurrency.times do |i|
-        num = i+1
+        num = i + 1
 
         pid = fork do
-          @server.close if @server
+          @server&.close
 
-          iterator = Iterator.new(@test_framework, relay?? @relay : @socket, method(:around_filter), early_failure_limit: @early_failure_limit, run_token: @run_token)
+          iterator = Iterator.new(@test_framework, relay? ? @relay : @socket, method(:around_filter), early_failure_limit: @early_failure_limit, run_token: @run_token)
           after_fork_internal(num, iterator)
           ret = run_worker(iterator) || 0
           cleanup_worker
@@ -324,12 +313,12 @@ module TestQueue
 
       @discovering_suites_pid = fork do
         terminate = false
-        Signal.trap("INT") { terminate = true }
+        Signal.trap('INT') { terminate = true }
 
-        $0 = "test-queue suite discovery process"
+        $0 = 'test-queue suite discovery process'
 
         @test_framework.all_suite_files.each do |path|
-          @test_framework.suites_from_file(path).each do |suite_name, suite|
+          @test_framework.suites_from_file(path).each do |suite_name, _suite|
             Kernel.exit!(0) if terminate
 
             @server.connect_address.connect do |sock|
@@ -344,13 +333,9 @@ module TestQueue
     end
 
     def awaiting_suites?
-      case
-      when @awaited_suites.any?
-        # We're waiting to find all the allowlisted suites so we can run them
-        # in the correct order.
-        true
-      when @queue.empty? && !!@discovering_suites_pid
-        # We don't have any suites yet, but we're working on it.
+      # We're waiting to find all the allowlisted suites so we can run them in the correct order.
+      # Or we don't have any suites yet, but we're working on it.
+      if @awaited_suites.any? || @queue.empty? && !!@discovering_suites_pid
         true
       else
         # It's fine to run any queued suites now.
@@ -379,9 +364,9 @@ module TestQueue
       if @awaited_suites.delete?(suite_name) && @awaited_suites.empty?
         # We've found all the allowlisted suites. Sort the queue to match the
         # allowlist.
-        @queue.sort_by! { |suite_name, path| @allowlist.index(suite_name) }
+        @queue.sort_by! { |queued_suite_name, _path| @allowlist.index(queued_suite_name) }
 
-        kill_suite_discovery_process("INT")
+        kill_suite_discovery_process('INT')
       end
     end
 
@@ -396,7 +381,7 @@ module TestQueue
 
       $0 = "test-queue worker [#{num}]"
       puts
-      puts "==> Starting #$0 (#{Process.pid} on #{Socket.gethostname}) - iterating over #{iterator.sock}"
+      puts "==> Starting #{$0} (#{Process.pid} on #{Socket.gethostname}) - iterating over #{iterator.sock}"
       puts
 
       after_fork(num)
@@ -408,7 +393,7 @@ module TestQueue
     def prepare(concurrency)
     end
 
-    def around_filter(suite)
+    def around_filter(_suite)
       yield
     end
 
@@ -425,7 +410,7 @@ module TestQueue
         puts "  #{item.inspect}"
       end
 
-      return 0 # exit status
+      0 # exit status
     end
 
     def cleanup_worker
@@ -436,7 +421,7 @@ module TestQueue
       worker.failure_output = ''
     end
 
-    def reap_workers(blocking=true)
+    def reap_workers(blocking = true)
       @workers.delete_if do |_, worker|
         if Process.waitpid(worker.pid, blocking ? 0 : Process::WNOHANG).nil?
           next false
@@ -455,35 +440,37 @@ module TestQueue
 
     def collect_worker_data(worker)
       if File.exist?(file = "/tmp/test_queue_worker_#{worker.pid}_output")
-        worker.output = IO.binread(file)
+        worker.output = File.binread(file)
         FileUtils.rm(file)
       end
 
       if File.exist?(file = "/tmp/test_queue_worker_#{worker.pid}_suites")
-        worker.suites.replace(Marshal.load(IO.binread(file)))
+        worker.suites.replace(Marshal.load(File.binread(file)))
         FileUtils.rm(file)
       end
     end
 
     def worker_completed(worker)
       return if @aborting
+
       @completed << worker
       puts worker.output if ENV['TEST_QUEUE_VERBOSE'] || worker.status.exitstatus != 0
     end
 
     def distribute_queue
       return if relay?
+
       remote_workers = 0
 
       until !awaiting_suites? && @queue.empty? && remote_workers == 0
         queue_status(@start_time, @queue.size, @workers.size, remote_workers)
 
-        if status = reap_suite_discovery_process(false)
-          abort("Discovering suites failed.") unless status.success?
-          abort("Failed to discover #{@awaited_suites.sort.join(", ")} specified in TEST_QUEUE_FORCE") if @awaited_suites.any?
+        if (status = reap_suite_discovery_process(false))
+          abort('Discovering suites failed.') unless status.success?
+          abort("Failed to discover #{@awaited_suites.sort.join(', ')} specified in TEST_QUEUE_FORCE") if @awaited_suites.any?
         end
 
-        if IO.select([@server], nil, nil, 0.1).nil?
+        if @server.wait_readable(0.1).nil?
           reap_workers(false) # check for worker deaths
         else
           sock = @server.accept
@@ -493,8 +480,8 @@ module TestQueue
           token = token[TOKEN_REGEX, 1]
           # If we have a remote master from a different test run, respond with "WRONG RUN", and it will consider the test run done.
           if token != @run_token
-            message = token.nil? ? "Worker sent no token to master" : "Worker from run #{token} connected to master"
-            STDERR.puts "*** #{message} for run #{@run_token}; ignoring."
+            message = token.nil? ? 'Worker sent no token to master' : "Worker from run #{token} connected to master"
+            warn "*** #{message} for run #{@run_token}; ignoring."
             sock.write("WRONG RUN\n")
             next
           end
@@ -504,13 +491,13 @@ module TestQueue
             hostname = $1
             pid = Integer($2)
             if awaiting_suites?
-              sock.write(Marshal.dump("WAIT"))
-            elsif obj = @queue.shift
+              sock.write(Marshal.dump('WAIT'))
+            elsif (obj = @queue.shift)
               data = Marshal.dump(obj)
               sock.write(data)
               @assignments[obj] = [hostname, pid]
             end
-          when /\AREMOTE MASTER (\d+) ([\w\.-]+)(?: (.+))?/
+          when /\AREMOTE MASTER (\d+) ([\w.-]+)(?: (.+))?/
             num = $1.to_i
             remote_master = $2
             remote_master_message = $3
@@ -518,9 +505,9 @@ module TestQueue
             sock.write("OK\n")
             remote_workers += num
 
-            message = "*** #{num} workers connected from #{remote_master} after #{Time.now-@start_time}s"
-            message << " " + remote_master_message if remote_master_message
-            STDERR.puts message
+            message = "*** #{num} workers connected from #{remote_master} after #{Time.now - @start_time}s"
+            message += " #{remote_master_message}" if remote_master_message
+            warn message
           when /\AWORKER (\d+)/
             data = sock.read($1.to_i)
             worker = Marshal.load(data)
@@ -534,7 +521,7 @@ module TestQueue
             # stop everything immediately and report the results.
             break
           else
-            STDERR.puts("Ignoring unrecognized command: \"#{cmd}\"")
+            warn("Ignoring unrecognized command: \"#{cmd}\"")
           end
           sock.close
         end
@@ -557,7 +544,8 @@ module TestQueue
           sock = TCPSocket.new(*@relay.split(':'))
         rescue Errno::ECONNREFUSED => e
           raise e if Time.now - start > @relay_connection_timeout
-          puts "Master not yet available, sleeping..."
+
+          puts 'Master not yet available, sleeping...'
           sleep 0.5
         end
       end
@@ -573,7 +561,7 @@ module TestQueue
       sock.puts("WORKER #{data.bytesize}")
       sock.write(data)
     ensure
-      sock.close if sock
+      sock&.close
     end
 
     def kill_subprocesses
@@ -582,21 +570,23 @@ module TestQueue
     end
 
     def kill_workers
-      @workers.each do |pid, worker|
+      @workers.each do |pid, _worker|
         Process.kill 'KILL', pid
       end
 
       reap_workers
     end
 
-    def kill_suite_discovery_process(signal="KILL")
+    def kill_suite_discovery_process(signal = 'KILL')
       return unless @discovering_suites_pid
+
       Process.kill signal, @discovering_suites_pid
       reap_suite_discovery_process
     end
 
-    def reap_suite_discovery_process(blocking=true)
+    def reap_suite_discovery_process(blocking = true)
       return unless @discovering_suites_pid
+
       _, status = Process.waitpid2(@discovering_suites_pid, blocking ? 0 : Process::WNOHANG)
       return unless status
 
@@ -612,7 +602,7 @@ module TestQueue
     def abort(message)
       @aborting = true
       kill_subprocesses
-      Kernel::abort("Aborting: #{message}")
+      Kernel.abort("Aborting: #{message}")
     end
 
     # Subclasses can override to monitor the status of the queue.

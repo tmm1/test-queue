@@ -1,9 +1,13 @@
-require "bundler/gem_tasks"
-require "rspec/core/rake_task"
+# frozen_string_literal: true
+
+require 'bundler/gem_tasks'
+require 'rspec/core/rake_task'
+require 'rubocop/rake_task'
 
 RSpec::Core::RakeTask.new(:spec)
+RuboCop::RakeTask.new
 
-task :default => [:setup, :spec, :feature]
+task default: [:setup, :rubocop, :spec, :feature]
 
 task :setup do
   sh 'script/bootstrap' unless File.exist?("#{Dir.pwd}/vendor/bats/bin/bats")

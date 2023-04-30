@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 require_relative '../runner'
 
 module Minitest
-  def self.__run reporter, options
+  def self.__run(reporter, options)
     suites = Runnable.runnables
     suites.map { |suite| suite.run reporter, options }
   end
@@ -13,7 +15,7 @@ module Minitest
   end
 
   class Test
-    def self.runnables= runnables
+    def self.runnables=(runnables)
       @@runnables = runnables
     end
 
@@ -25,17 +27,19 @@ module Minitest
     # code, there's no way to know which are parallel and which are serial.
     # Synchronizing serial tests does add some overhead, but hopefully this is
     # outweighed by the speed benefits of using test-queue.
-    def _synchronize; Test.io_lock.synchronize { yield }; end
+    def _synchronize
+      Test.io_lock.synchronize { yield }
+    end
   end
 
   class ProgressReporter
     # Override original method to make test-queue specific output
-    def record result
+    def record(result)
       io.print '    '
       io.print result.class
       io.print ': '
       io.print result.result_code
-      io.puts("  <%.3f>" % result.time)
+      io.puts('  <%.3f>' % result.time)
     end
   end
 
@@ -44,11 +48,13 @@ module Minitest
 
     class << self
       private
-      def total_count(options)
+
+      def total_count(_options)
         0
       end
     end
   rescue LoadError
+    # noop
   end
 end
 
@@ -64,8 +70,9 @@ module TestQueue
         end
 
         if ::Minitest::Test.runnables.any? { |r| r.runnable_methods.any? }
-          fail "Do not `require` test files. Pass them via ARGV instead and they will be required as needed."
+          raise 'Do not `require` test files. Pass them via ARGV instead and they will be required as needed.'
         end
+
         super(TestFramework::Minitest.new)
       end
 
@@ -93,8 +100,8 @@ module TestQueue
         ::Minitest::Test.reset
         require File.absolute_path(path)
         ::Minitest::Test.runnables
-          .reject { |s| s.runnable_methods.empty? }
-          .map { |s| [s.name, s] }
+                        .reject { |s| s.runnable_methods.empty? }
+                        .map { |s| [s.name, s] }
       end
     end
     MiniTest = Minitest # For compatibility with test-queue 0.7.0 and earlier.

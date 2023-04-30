@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative '../runner'
 
 gem 'test-unit'
@@ -28,7 +30,7 @@ class Test::Unit::TestSuite
   end
 
   def failure_count
-    (@iterator || @tests).map {|t| t.instance_variable_get(:@_result).failure_count}.inject(0, :+)
+    (@iterator || @tests).sum { |t| t.instance_variable_get(:@_result).failure_count }
   end
 end
 
@@ -37,13 +39,14 @@ module TestQueue
     class TestUnit < Runner
       def initialize
         if Test::Unit::Collector::Descendant.new.collect.tests.any?
-          fail "Do not `require` test files. Pass them via ARGV instead and they will be required as needed."
+          raise 'Do not `require` test files. Pass them via ARGV instead and they will be required as needed.'
         end
+
         super(TestFramework::TestUnit.new)
       end
 
       def run_worker(iterator)
-        @suite = Test::Unit::TestSuite.new("specified by test-queue master")
+        @suite = Test::Unit::TestSuite.new('specified by test-queue master')
         @suite.iterator = iterator
         res = Test::Unit::UI::Console::TestRunner.new(@suite).start
         res.run_count - res.pass_count
