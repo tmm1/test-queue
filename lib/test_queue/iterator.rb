@@ -2,6 +2,8 @@
 
 module TestQueue
   class Iterator
+    include Enumerable
+
     attr_reader :sock
 
     def initialize(test_framework, sock, filter = nil, run_token:, early_failure_limit: nil)
@@ -94,8 +96,6 @@ module TestQueue
     rescue Errno::EPIPE
       nil
     end
-
-    include Enumerable
 
     def empty?
       false
