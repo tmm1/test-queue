@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
+require_relative 'lib/test_queue/version'
+
 Gem::Specification.new do |s|
   s.name = 'test-queue'
-  s.version = '0.7.0'
+  s.version = TestQueue::VERSION
   s.required_ruby_version = '>= 2.7.0'
   s.summary = 'parallel test runner'
   s.description = 'minitest/rspec parallel test runner for CI environments'
