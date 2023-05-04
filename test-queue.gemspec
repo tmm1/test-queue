@@ -21,6 +21,6 @@ Gem::Specification.new do |s|
   s.executables << 'testunit-queue'
   s.executables << 'cucumber-queue'
 
-  s.files = `git ls-files`.split("\n")
+  s.files = Dir['LICENSE', 'README.md', 'lib/**/*']
   s.metadata['rubygems_mfa_required'] = 'true'
 end
