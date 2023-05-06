@@ -28,6 +28,7 @@ jobs:
           - { name: rspec3, bats: test/rspec3.bats }
           - { name: rspec4, bats: test/rspec4.bats }
           - { name: testunit, bats: test/testunit.bats }
+          - { name: turnip, bats: test/turnip.bats }
 
     steps:
       - name: checkout

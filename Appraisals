@@ -43,3 +43,7 @@ end
 appraise 'testunit' do
   gem 'test-unit'
 end
+
+appraise 'turnip' do
+  gem 'turnip', '~> 4.4'
+end
