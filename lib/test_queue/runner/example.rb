@@ -6,6 +6,10 @@ require_relative '../runner'
 module TestQueue
   class Runner
     class Example < Runner
+      def initialize(args)
+        super(TestFramework::Example.new(args))
+      end
+
       def spawn_workers
         puts "Spawning #{@concurrency} workers"
         super
@@ -17,17 +21,33 @@ module TestQueue
       end
 
       def run_worker(iterator)
-        sum = 0
-        iterator.each do |item|
+        iterator.inject(0) do |sum, item|
           puts "  #{item.inspect}"
-          sum += item
+          sum + item.to_i
         end
-        sum
       end
 
       def summarize_worker(worker)
         worker.summary = worker.output.scan(/^\s*(\d+)/).join(', ')
         worker.failure_output = ''
+      end
+    end
+  end
+
+  class TestFramework
+    class Example < TestFramework
+      def initialize(args)
+        super()
+
+        @args = args.map(&:to_s)
+      end
+
+      def all_suite_files
+        @args
+      end
+
+      def suites_from_file(_path)
+        @args.map { |i| [i, i] }
       end
     end
   end
@@ -73,4 +93,3 @@ Spawning 4 workers
     [3]                                                              in 0.0036s      (pid 40409 exit 0)
     [2]                                                 3, 6, 9      in 0.0038s      (pid 40408 exit 18)
     [0]                                             1, 4, 7, 10      in 0.0044s      (pid 40406 exit 22)
-
