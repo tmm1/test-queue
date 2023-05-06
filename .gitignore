@@ -1,3 +1,4 @@
+.bundle
 .test_queue_stats
 .ruby-version
 Gemfile.lock
