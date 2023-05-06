@@ -10,7 +10,7 @@ RuboCop::RakeTask.new
 task default: [:setup, :rubocop, :spec, :feature]
 
 task :setup do
-  sh 'script/bootstrap' unless File.exist?("#{Dir.pwd}/vendor/bats/bin/bats")
+  sh 'bin/setup' unless File.exist?("#{Dir.pwd}/vendor/bats/bin/bats")
 end
 
 task :feature do
