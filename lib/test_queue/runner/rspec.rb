@@ -1,16 +1,11 @@
 # frozen_string_literal: true
 
-require_relative '../runner'
 require 'rspec/core'
 
-case RSpec::Core::Version::STRING.to_i
-when 2
-  require_relative 'rspec2'
-when 3, 4
-  require_relative 'rspec3'
-else
-  raise 'requires rspec version 2, 3, or 4'
-end
+raise 'requires RSpec version 3 or 4' unless [3, 4].include?(RSpec::Core::Version::STRING.to_i)
+
+require_relative 'rspec_ext'
+require_relative '../runner'
 
 module TestQueue
   class Runner
