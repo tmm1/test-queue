@@ -22,12 +22,6 @@ appraise 'minitest5' do
   gem 'minitest', '5.10.0'
 end
 
-appraise 'rspec2' do
-  # Pin Rake version to Prevent `NoMethodError: undefined method `last_comment'`.
-  gem 'rake', '< 11.0'
-  gem 'rspec', '~> 2.99'
-end
-
 appraise 'rspec3' do
   gem 'rspec', '~> 3.12'
 end
