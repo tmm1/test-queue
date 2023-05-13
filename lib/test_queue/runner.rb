@@ -90,13 +90,7 @@ module TestQueue
       @run_token = ENV['TEST_QUEUE_RELAY_TOKEN'] || SecureRandom.hex(8)
       @socket = socket || ENV['TEST_QUEUE_SOCKET'] || "/tmp/test_queue_#{$$}_#{object_id}.sock"
       @relay = relay || ENV['TEST_QUEUE_RELAY']
-
-      @remote_master_message = if ENV.key?('TEST_QUEUE_REMOTE_MASTER_MESSAGE')
-                                 ENV['TEST_QUEUE_REMOTE_MASTER_MESSAGE']
-                               elsif ENV.key?('TEST_QUEUE_SLAVE_MESSAGE')
-                                 warn('`TEST_QUEUE_SLAVE_MESSAGE` is deprecated. Use `TEST_QUEUE_REMOTE_MASTER_MESSAGE` instead.')
-                                 ENV['TEST_QUEUE_SLAVE_MESSAGE']
-                               end
+      @remote_master_message = ENV['TEST_QUEUE_REMOTE_MASTER_MESSAGE'] if ENV.key?('TEST_QUEUE_REMOTE_MASTER_MESSAGE')
 
       if @relay == @socket
         warn '*** Detected TEST_QUEUE_RELAY == TEST_QUEUE_SOCKET. Disabling relay mode.'
