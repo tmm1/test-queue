@@ -38,10 +38,8 @@ module TestQueue
         end
         break if client.nil?
 
-        # rubocop:disable Lint/IncompatibleIoSelectWithFiberScheduler
         # This false positive will be resolved by https://github.com/rubocop/rubocop/pull/11830.
         _r, _w, e = IO.select([client], nil, [client], nil)
-        # rubocop:enable Lint/IncompatibleIoSelectWithFiberScheduler
         break unless e.empty?
 
         if (data = client.read(65536))
