@@ -12,16 +12,30 @@ module TestQueue
     class RSpec < Runner
       def initialize
         super(TestFramework::RSpec.new)
+
+        @rspec = ::RSpec::Core::QueueRunner.new
+      end
+
+      def start_master
+        seed_notification = ::RSpec::Core::Notifications::SeedNotification.new(@rspec.configuration.seed, seed_used?)
+        puts "#{seed_notification.fully_formatted}\n"
+
+        super
       end
 
       def run_worker(iterator)
-        rspec = ::RSpec::Core::QueueRunner.new
-        rspec.run_each(iterator).to_i
+        @rspec.run_each(iterator).to_i
       end
 
       def summarize_worker(worker)
         worker.summary = worker.lines.grep(/ examples?, /).first
         worker.failure_output = worker.output[/^Failures:\n\n(.*)\n^Finished/m, 1]
+      end
+
+      private
+
+      def seed_used?
+        @rspec.configuration.seed && @rspec.configuration.seed_used?
       end
     end
   end
