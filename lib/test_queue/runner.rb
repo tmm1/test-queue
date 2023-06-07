@@ -6,6 +6,7 @@ require 'fileutils'
 require 'securerandom'
 require_relative 'stats'
 require_relative 'test_framework'
+require_relative 'transport'
 
 module TestQueue
   class Worker
@@ -33,9 +34,7 @@ module TestQueue
     attr_accessor :concurrency, :exit_when_done
     attr_reader :stats
 
-    TOKEN_REGEX = /\ATOKEN=(\w+)/
-
-    def initialize(test_framework, concurrency = nil, socket = nil, relay = nil)
+    def initialize(test_framework, concurrency = nil, transport = nil, relay = nil)
       @test_framework = test_framework
       @stats = Stats.new(stats_file)
 
@@ -88,12 +87,12 @@ module TestQueue
 
       @relay_connection_timeout = ENV['TEST_QUEUE_RELAY_TIMEOUT']&.to_i || 30
       @run_token = ENV['TEST_QUEUE_RELAY_TOKEN'] || SecureRandom.hex(8)
-      @socket = socket || ENV['TEST_QUEUE_SOCKET'] || "/tmp/test_queue_#{$$}_#{object_id}.sock"
+      @transport = transport || ENV['TEST_QUEUE_TRANSPORT'] || "/tmp/test_queue_#{$$}_#{object_id}.sock"
       @relay = relay || ENV['TEST_QUEUE_RELAY']
       @remote_master_message = ENV['TEST_QUEUE_REMOTE_MASTER_MESSAGE'] if ENV.key?('TEST_QUEUE_REMOTE_MASTER_MESSAGE')
 
-      if @relay == @socket
-        warn '*** Detected TEST_QUEUE_RELAY == TEST_QUEUE_SOCKET. Disabling relay mode.'
+      if @relay == @transport
+        warn '*** Detected TEST_QUEUE_RELAY == TEST_QUEUE_TRANSPORT. Disabling relay mode.'
         @relay = nil
       elsif @relay
         @queue = []
@@ -234,18 +233,10 @@ module TestQueue
 
     def start_master
       unless relay?
-        if @socket =~ /\A(?:(.+):)?(\d+)\z/
-          address = $1 || '0.0.0.0'
-          port = $2.to_i
-          @socket = "#{$1}:#{$2}"
-          @server = TCPServer.new(address, port)
-        else
-          FileUtils.rm_f(@socket)
-          @server = UNIXServer.new(@socket)
-        end
+        @server = Transport.server(@transport, @run_token)
       end
 
-      desc = "test-queue master (#{relay? ? "relaying to #{@relay}" : @socket})"
+      desc = "test-queue master (#{relay? ? "relaying to #{@relay}" : @transport})"
       puts "Starting #{desc}"
       $0 = "#{desc} - #{@procline}"
     end
@@ -253,29 +244,18 @@ module TestQueue
     def start_relay
       return unless relay?
 
-      sock = connect_to_relay
-      message = @remote_master_message ? " #{@remote_master_message}" : ''
-      message = message.gsub(/(\r|\n)/, '') # Our "protocol" is newline-separated
-      sock.puts("TOKEN=#{@run_token}")
-      sock.puts("REMOTE MASTER #{@concurrency} #{Socket.gethostname} #{message}")
-      response = sock.gets.strip
-      unless response == 'OK'
+      response = Transport.client(@relay, @run_token).start_relay(@concurrency, @remote_master_message)
+      if response != 'OK'
         warn "*** Got non-OK response from master: #{response}"
-        sock.close
         exit! 1
       end
-      sock.close
-    rescue Errno::ECONNREFUSED
-      warn "*** Unable to connect to relay #{@relay}. Aborting..."
-      exit! 1
     end
 
     def stop_master
       return if relay?
 
-      FileUtils.rm_f(@socket) if @socket && @server.is_a?(UNIXServer)
-      @server.close rescue nil if @server
-      @socket = @server = nil
+      @server.stop rescue nil if @server
+      @transport = @server = nil
     end
 
     def spawn_workers
@@ -285,7 +265,7 @@ module TestQueue
         pid = fork do
           @server&.close
 
-          iterator = Iterator.new(@test_framework, relay? ? @relay : @socket, method(:around_filter), early_failure_limit: @early_failure_limit, run_token: @run_token)
+          iterator = Iterator.new(@test_framework, relay? ? @relay : @transport, method(:around_filter), early_failure_limit: @early_failure_limit, run_token: @run_token)
           after_fork_internal(num, iterator)
           ret = run_worker(iterator) || 0
           cleanup_worker
@@ -315,10 +295,7 @@ module TestQueue
           @test_framework.suites_from_file(path).each do |suite_name, _suite|
             Kernel.exit!(0) if terminate
 
-            @server.connect_address.connect do |sock|
-              sock.puts("TOKEN=#{@run_token}")
-              sock.puts("NEW SUITE #{Marshal.dump([suite_name, path])}")
-            end
+            Transport.client(@transport, @run_token).new_suite(suite_name, path)
           end
         end
 
@@ -375,7 +352,7 @@ module TestQueue
 
       $0 = "test-queue worker [#{num}]"
       puts
-      puts "==> Starting #{$0} (#{Process.pid} on #{Socket.gethostname}) - iterating over #{iterator.sock}"
+      puts "==> Starting #{$0} (#{Process.pid} on #{Socket.gethostname}) - iterating over #{iterator.client}"
       puts
 
       after_fork(num)
@@ -464,31 +441,26 @@ module TestQueue
           abort("Failed to discover #{@awaited_suites.sort.join(', ')} specified in TEST_QUEUE_FORCE") if @awaited_suites.any?
         end
 
-        if @server.wait_readable(0.1).nil?
+        request = @server.next_request
+        if request.nil?
           reap_workers(false) # check for worker deaths
         else
-          sock = @server.accept
-          token = sock.gets.strip
-          cmd = sock.gets.strip
-
-          token = token[TOKEN_REGEX, 1]
           # If we have a remote master from a different test run, respond with "WRONG RUN", and it will consider the test run done.
-          if token != @run_token
-            message = token.nil? ? 'Worker sent no token to master' : "Worker from run #{token} connected to master"
+          if request.token != @run_token
+            message = request.token.nil? ? 'Worker sent no token to master' : "Worker from run #{request.token} connected to master"
             warn "*** #{message} for run #{@run_token}; ignoring."
-            sock.write("WRONG RUN\n")
+            request.wrong_run
             next
           end
 
-          case cmd
+          case request.cmd
           when /\APOP (\S+) (\d+)/
             hostname = $1
             pid = Integer($2)
             if awaiting_suites?
-              sock.write(Marshal.dump('WAIT'))
+              request.wait
             elsif (obj = @queue.shift)
-              data = Marshal.dump(obj)
-              sock.write(data)
+              request.pop(obj)
               @assignments[obj] = [hostname, pid]
             end
           when /\AREMOTE MASTER (\d+) ([\w.-]+)(?: (.+))?/
@@ -496,15 +468,14 @@ module TestQueue
             remote_master = $2
             remote_master_message = $3
 
-            sock.write("OK\n")
+            request.ok
             remote_workers += num
 
             message = "*** #{num} workers connected from #{remote_master} after #{Time.now - @start_time}s"
             message += " #{remote_master_message}" if remote_master_message
             warn message
           when /\AWORKER (\d+)/
-            data = sock.read($1.to_i)
-            worker = Marshal.load(data)
+            worker = request.read_worker($1.to_i)
             worker_completed(worker)
             remote_workers -= 1
           when /\ANEW SUITE (.+)/
@@ -517,7 +488,7 @@ module TestQueue
           else
             warn("Ignoring unrecognized command: \"#{cmd}\"")
           end
-          sock.close
+          request.close
         end
       end
     ensure
@@ -529,33 +500,11 @@ module TestQueue
       !!@relay
     end
 
-    def connect_to_relay
-      sock = nil
-      start = Time.now
-      puts "Attempting to connect for #{@relay_connection_timeout}s..."
-      while sock.nil?
-        begin
-          sock = TCPSocket.new(*@relay.split(':'))
-        rescue Errno::ECONNREFUSED => e
-          raise e if Time.now - start > @relay_connection_timeout
-
-          puts 'Master not yet available, sleeping...'
-          sleep 0.5
-        end
-      end
-      sock
-    end
-
     def relay_to_master(worker)
       worker.host = Socket.gethostname
       data = Marshal.dump(worker)
 
-      sock = connect_to_relay
-      sock.puts("TOKEN=#{@run_token}")
-      sock.puts("WORKER #{data.bytesize}")
-      sock.write(data)
-    ensure
-      sock&.close
+      Transport.client(@relay, @run_token).relay_to_master(data)
     end
 
     def kill_subprocesses

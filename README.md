@@ -71,8 +71,8 @@ MyAppTestRunner.new.execute
 
 - `TEST_QUEUE_WORKERS`: Number of workers to use per master (default: all available cores)
 - `TEST_QUEUE_VERBOSE`: Show results as they are available (default: `0`)
-- `TEST_QUEUE_SOCKET`: Unix socket `path` (or TCP `address:port` pair) used for communication (default: `/tmp/test_queue_XXXXX.sock`)
-- `TEST_QUEUE_RELAY`: Relay results back to a central master, specified as TCP `address:port`
+- `TEST_QUEUE_TRANSPORT`: Unix socket `path` (or TCP `tcp://address:port` pair) used for communication (default: `/tmp/test_queue_XXXXX.sock`)
+- `TEST_QUEUE_RELAY`: Relay results back to a central master, specified as TCP `tcp://address:port`
 - `TEST_QUEUE_STATS`: `path` to cache build stats in-build CI runs (default: `.test_queue_stats`)
 - `TEST_QUEUE_FORCE`: Comma separated list of suites to run
 - `TEST_QUEUE_RELAY_TIMEOUT`: When using distributed builds, the amount of time a remote master will try to reconnect to start work
@@ -104,8 +104,8 @@ in relay mode to connect to the central master. Remote masters must provide a `T
 to match the central master's.
 
 ```console
-$ TEST_QUEUE_RELAY_TOKEN=123 TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec minitest-queue ./test/example_test.rb
-$ TEST_QUEUE_RELAY_TOKEN=123 TEST_QUEUE_RELAY=0.0.0.0:12345  bundle exec minitest-queue ./test/example_test.rb
+$ TEST_QUEUE_RELAY_TOKEN=123 TEST_QUEUE_TRANSPORT=tcp://0.0.0.0:12345 bundle exec minitest-queue ./test/example_test.rb
+$ TEST_QUEUE_RELAY_TOKEN=123 TEST_QUEUE_RELAY=tcp://0.0.0.0:12345  bundle exec minitest-queue ./test/example_test.rb
 $ TEST_QUEUE_RELAY_TOKEN=123 ./test-multi.sh
 ```
 

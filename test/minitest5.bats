@@ -92,9 +92,9 @@ assert_test_queue_force_ordering() {
 @test "multi-master central master succeeds when all tests pass" {
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
   export SLEEP_AS_RELAY=1
-  TEST_QUEUE_RELAY=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb || true &
+  TEST_QUEUE_RELAY=tcp://0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb || true &
   sleep 0.1
-  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb
+  TEST_QUEUE_TRANSPORT=tcp://0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb
   wait
 
   assert_status 0
@@ -104,9 +104,9 @@ assert_test_queue_force_ordering() {
 @test "multi-master remote master succeeds when all tests pass" {
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
   export SLEEP_AS_MASTER=1
-  TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb || true &
+  TEST_QUEUE_TRANSPORT=tcp://0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb || true &
   sleep 0.1
-  TEST_QUEUE_RELAY=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb
+  TEST_QUEUE_RELAY=tcp://0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb
   wait
 
   assert_status 0
@@ -117,9 +117,9 @@ assert_test_queue_force_ordering() {
   export FAIL=1
   export SLEEP_AS_RELAY=1
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
-  TEST_QUEUE_RELAY=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb || true &
+  TEST_QUEUE_RELAY=tcp://0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb || true &
   sleep 0.1
-  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb
+  TEST_QUEUE_TRANSPORT=tcp://0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb
   wait
 
   assert_status 1
@@ -132,9 +132,9 @@ assert_test_queue_force_ordering() {
   export FAIL=1
   export SLEEP_AS_MASTER=1
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
-  TEST_QUEUE_SOCKET=0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb || true &
+  TEST_QUEUE_TRANSPORT=tcp://0.0.0.0:12345 bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb || true &
   sleep 0.1
-  TEST_QUEUE_RELAY=0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb
+  TEST_QUEUE_RELAY=tcp://0.0.0.0:12345 run bundle exec ruby ./test/sleepy_runner.rb ./test/examples/example_minitest5.rb
   wait
 
   assert_status 1
@@ -145,8 +145,8 @@ assert_test_queue_force_ordering() {
 
 @test "multi-master central master prints out remote master messages" {
   export TEST_QUEUE_RELAY_TOKEN=$(date | cksum | cut -d' ' -f1)
-  TEST_QUEUE_RELAY=0.0.0.0:12345 TEST_QUEUE_REMOTE_MASTER_MESSAGE="hello from remote master" bundle exec minitest-queue ./test/examples/example_minitest5.rb &
-  TEST_QUEUE_SOCKET=0.0.0.0:12345 run bundle exec minitest-queue ./test/examples/example_minitest5.rb
+  TEST_QUEUE_RELAY=tcp://0.0.0.0:12345 TEST_QUEUE_REMOTE_MASTER_MESSAGE="hello from remote master" bundle exec minitest-queue ./test/examples/example_minitest5.rb &
+  TEST_QUEUE_TRANSPORT=tcp://0.0.0.0:12345 run bundle exec minitest-queue ./test/examples/example_minitest5.rb
   wait
 
   assert_status 0
