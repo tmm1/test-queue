@@ -7,6 +7,7 @@ setup() {
 @test "rspec-queue succeeds when all specs pass" {
   run bundle exec rspec-queue ./test/examples/example_spec.rb
   assert_status 0
+  assert_output_contains "Randomized with seed"
   assert_output_contains "Starting test-queue master"
   assert_output_contains "16 examples, 0 failures"
   assert_output_contains "16 examples, 0 failures"
