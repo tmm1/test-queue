@@ -7,5 +7,5 @@ gemspec
 gem 'appraisal'
 gem 'rake'
 gem 'rspec', '>= 2.13', '< 4.0'
-gem 'rubocop', '~> 1.51.0'
+gem 'rubocop', '~> 1.53.0'
 gem 'rubocop-performance', '~> 1.17.0'
