@@ -8,6 +8,12 @@ class TestUnitEqual < Test::Unit::TestCase
   end
 end
 
+class Short < Test::Unit::TestCase
+  def test_work_with_short_class_name
+    assert true
+  end
+end
+
 30.times do |i|
   Object.const_set("TestUnitSleep#{i}", Class.new(Test::Unit::TestCase) do
     define_method(:test_sleep) do

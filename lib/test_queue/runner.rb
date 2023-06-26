@@ -317,7 +317,9 @@ module TestQueue
 
             @server.connect_address.connect do |sock|
               sock.puts("TOKEN=#{@run_token}")
-              sock.puts("NEW SUITE #{Marshal.dump([suite_name, path])}")
+              data = Marshal.dump([suite_name, path])
+              sock.puts("NEW SUITE #{data.bytesize}")
+              sock.write(data)
             end
           end
         end
@@ -507,8 +509,9 @@ module TestQueue
             worker = Marshal.load(data)
             worker_completed(worker)
             remote_workers -= 1
-          when /\ANEW SUITE (.+)/
-            suite_name, path = Marshal.load($1)
+          when /\ANEW SUITE (\d+)/
+            data = sock.read($1.to_i)
+            suite_name, path = Marshal.load(data)
             enqueue_discovered_suite(suite_name, path)
           when /\AKABOOM/
             # worker reporting an abnormal number of test failures;
