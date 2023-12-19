@@ -282,7 +282,7 @@ module TestQueue
       @concurrency.times do |i|
         num = i + 1
 
-        pid = fork do
+        pid = Process.fork do
           @server&.close
 
           iterator = Iterator.new(@test_framework, relay? ? @relay : @socket, method(:around_filter), early_failure_limit: @early_failure_limit, run_token: @run_token)
