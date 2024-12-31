@@ -18,8 +18,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu]
-        # Lowest and Latest version.
-        ruby: ['2.7', '3.3']
+        # Lowest and Latest versions.
+        ruby: ['2.7', '3.4']
         entry:
           - { name: cucumber1_3, bats: test/cucumber.bats }
           - { name: cucumber2_4, bats: test/cucumber.bats }
