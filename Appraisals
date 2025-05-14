@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-appraise 'cucumber1-3' do
-  gem 'cucumber', '~> 1.3.10'
-  # Pin Rake version to Prevent `NoMethodError: undefined method `last_comment'`.
-  gem 'rake', '< 11.0'
-end
-
 appraise 'cucumber2-4' do
   gem 'cucumber', '~> 2.4.0'
   # Pin Rake version to Prevent `NoMethodError: undefined method `last_comment'`.
