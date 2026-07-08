@@ -21,7 +21,6 @@ jobs:
         # Lowest and Latest version.
         ruby: ['2.7', '3.3']
         entry:
-          - { name: cucumber1_3, bats: test/cucumber.bats }
           - { name: cucumber2_4, bats: test/cucumber.bats }
           - { name: minitest5, bats: test/minitest5.bats }
           - { name: minitest6, bats: test/minitest6.bats }

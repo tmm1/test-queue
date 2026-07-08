@@ -56,11 +56,7 @@ module TestQueue
 
         @test_framework.cli.execute!(runtime)
 
-        if runtime.respond_to?(:summary_report, true)
-          runtime.send(:summary_report).test_cases.total_failed
-        else
-          runtime.results.scenarios(:failed).size
-        end
+        runtime.send(:summary_report).test_cases.total_failed
       end
 
       def summarize_worker(worker)
